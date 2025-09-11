@@ -27,7 +27,7 @@ export class AuthController {
   ): Promise<ApiResponse<LoginResponseDto>> {
     try {
       const user = await this.authService.validateUser(dto.email, dto.password);
-      if (!user) throw new UnauthorizedException();
+      if (!user) throw new UnauthorizedException('Invalid credentials');
 
       const accessToken = this.authService.issueAccessToken(user);
 

@@ -25,12 +25,14 @@ export class UserService {
     firstName: string;
     lastName: string;
   }): Promise<User> {
+    const hashedPassword = await hashPassword(data.password);
     return this.prisma.user.create({
       data: {
         email: data.email,
-        password: await hashPassword(data.password),
+        password: hashedPassword,
         firstName: data.firstName,
         lastName: data.lastName,
+        departmentId: 1,
       },
     });
   }

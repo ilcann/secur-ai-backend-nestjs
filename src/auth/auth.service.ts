@@ -14,10 +14,15 @@ export class AuthService {
     private userService: UserService,
   ) {}
   async validateUser(email: string, password: string): Promise<UserDto | null> {
+    console.log('Validating user with email:', email);
+    console.log('Provided password:', await hashPassword(password));
     const user = await this.userService.findByEmail(email);
+    console.log('User found:', user);
+    console.log('User password:', user?.password);
     if (!user) return null;
 
     const isPasswordValid = await comparePassword(password, user.password);
+    console.log('Is password valid:', isPasswordValid);
     if (!isPasswordValid) return null;
 
     return UserMapper.toDto(user);
@@ -42,10 +47,9 @@ export class AuthService {
     const existingUser = await this.userService.findByEmail(email);
     if (existingUser) throw new ConflictException('Email already in use');
 
-    const hashedPassword = await hashPassword(password);
     const newUser = await this.userService.createUser({
       email,
-      password: hashedPassword,
+      password,
       firstName,
       lastName,
     });
