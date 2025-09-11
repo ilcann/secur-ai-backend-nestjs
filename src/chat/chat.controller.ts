@@ -12,12 +12,14 @@ import { ChatService } from './chat.service';
 import { ChatDto } from './dto/chat.dto';
 import { ChatMapper } from './mapper/chat.mapper';
 import { CreateChatResponseDto } from './dto/create-chat-response.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('chat')
+@ApiBearerAuth()
+@UseGuards(AuthGuard('jwt'))
 export class ChatController {
   constructor(private chatService: ChatService) {}
 
-  @UseGuards(AuthGuard('jwt'))
   @Post()
   async createChat(@Request() req: AuthenticatedRequest) {
     try {
