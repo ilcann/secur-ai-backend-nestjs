@@ -5,6 +5,7 @@ import { UserMapper } from 'src/user/mappers/user.mapper';
 import { UserService } from 'src/user/user.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -37,7 +38,7 @@ export class AuthService {
     password: string,
     firstName: string,
     lastName: string,
-  ): Promise<UserDto> {
+  ): Promise<User> {
     const existingUser = await this.userService.findByEmail(email);
     if (existingUser) throw new ConflictException('Email already in use');
 
@@ -49,6 +50,6 @@ export class AuthService {
       lastName,
     });
 
-    return UserMapper.toDto(newUser);
+    return newUser;
   }
 }

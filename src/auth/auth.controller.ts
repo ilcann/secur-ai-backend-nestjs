@@ -7,6 +7,8 @@ import { LoginResponseDto } from './dto/login-response.dto';
 import { ApiResponse } from 'src/common/dto/api-response.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
 import { RegisterRequestDto } from './dto/register-request.dto';
+import { UserDto } from 'src/user/dto/user.dto';
+import { UserMapper } from 'src/user/mappers/user.mapper';
 
 @Controller('auth')
 export class AuthController {
@@ -64,7 +66,8 @@ export class AuthController {
         dto.firstName,
         dto.lastName,
       );
-      const response: RegisterResponseDto = { user };
+      const userDto: UserDto = UserMapper.toDto(user);
+      const response: RegisterResponseDto = { user: userDto };
 
       return {
         success: true,
