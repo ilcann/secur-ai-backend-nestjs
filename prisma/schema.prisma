@@ -30,6 +30,8 @@ model User {
   lastName  String
   password  String
 
+  isSystem  Boolean @default(false)
+
   departmentId Int?
   department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
 
@@ -55,7 +57,7 @@ model Department {
   name        String  @unique
   description String?
 
-  users  User[]
+  users User[]
   teams Team[]
 
   aiModelLimits AiModelDepartmentLimit[]
@@ -155,6 +157,7 @@ enum MessageStatus {
   STREAMING
   COMPLETED
 }
+
 enum MessageRole {
   USER
   ASSISTANT
