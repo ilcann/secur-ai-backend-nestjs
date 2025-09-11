@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////
+// USER, DEPARTMENT, TEAM
+//////////////////////////
+
+enum UserRole {
+  SUPER_ADMIN
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+}
+
+model User {
+  id        Int    @id @default(autoincrement())
+  email     String @unique
+  firstName String
+  lastName  String
+  password  String
+
+  departmentId Int?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  teams Team[] @relation("UserTeams")
+
+  role   UserRole   @default(USER)
+  status UserStatus @default(PENDING)
+
+  chats    Chat[]    @relation("ChatsOwned")
+  messages Message[] @relation("UserMessages")
+  usages   AiUsage[]
+
+  maskPolicies MaskPolicy[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([departmentId])
+}
+
+model Department {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String?
+
+  users  User[]
+  teams Team[]
+
+  aiModelLimits AiModelDepartmentLimit[]
+  usages AiUsage[]
+
+  maskPolicies MaskPolicy[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Team {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String?
+
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  departmentId Int
+
+  users User[] @relation("UserTeams")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+//////////////////////////
+// MASKING & ENTITY LABELS
+//////////////////////////
+
+enum MaskAction {
+  MASK
+  UNMASK
+}
+
+model EntityLabel {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  name        String
+  description String?
+
+  policies    MaskPolicy[]
+  occurrences MessageEntity[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MessageEntity {
+  id        Int     @id @default(autoincrement())
+  messageId Int
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  entityLabelId Int
+  entityLabel   EntityLabel @relation(fields: [entityLabelId], references: [id])
+
+  value  String // orijinal (opsiyonel, compliance gerekirse şifrelenmiş saklanır!)
+  maskedValue String? // maskelendiğinde gözükecek
+
+  isMasked      MaskAction    @default(MASK)
+
+
+  start  Int? // mesaj içindeki başlangıç indexi
+  end    Int? // mesaj içindeki bitiş indexi
+
+  createdAt DateTime @default(now())
+}
+
+model MaskPolicy {
+  id          Int      @id @default(autoincrement())
+
+  entityLabelId Int
+  entityLabel   EntityLabel @relation(fields: [entityLabelId], references: [id])
+
+  isMasked      MaskAction    @default(MASK)
+
+  userId       Int?
+  user         User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  departmentId Int?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([entityLabelId, userId, departmentId])
+}
+
+//////////////////////////
+// CHAT & MESSAGE
+//////////////////////////
+enum MessageStatus {
+  CREATED
+  EXTRACTING
+  EXTRACTED
+  MASKING
+  MASKED
+  STREAMING
+  COMPLETED
+}
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+model Message {
+  id     Int  @id @default(autoincrement())
+  chatId String
+  chat   Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  status   MessageStatus @default(CREATED)
+
+  senderId Int
+  sender   User @relation("UserMessages", fields: [senderId], references: [id], onDelete: Cascade)
+
+  role     MessageRole  @default(USER)
+
+  content  String @default("")
+  maskedContent   String @default("")
+
+  entities MessageEntity[]
+
+  modelId Int
+  model   AiModel? @relation(fields: [modelId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([chatId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model Chat {
+  id      String   @id @default(uuid())
+  title   String @default("")
+  ownerId Int
+  owner   User   @relation("ChatsOwned", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId, title])
+  @@index([ownerId, updatedAt])
+}
+
+//////////////////////////
+// AI MODELS & USAGE
+//////////////////////////
+
+enum AiProviderName {
+  OPENAI
+  GEMINI
+  CLAUDE
+}
+
+model AiProvider {
+  id        Int             @id @default(autoincrement())
+  name      AiProviderName  @unique
+
+  apiKey    String?
+  active    Boolean         @default(false)
+
+  models    AiModel[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AiModel {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String?
+
+  active     Boolean @default(false)
+
+  provider    AiProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  providerId  Int
+
+  messages Message[]
+  usages   AiUsage[]
+
+  defaultLimit Int?
+  departmentLimits  AiModelDepartmentLimit[]
+  pricePerToken Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AiUsage {
+  id Int @id @default(autoincrement())
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  departmentId Int?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  modelId Int
+  model   AiModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  tokens    Int // harcanan token sayısı
+  createdAt DateTime @default(now())
+}
+
+model AiModelDepartmentLimit {
+  id          Int      @id @default(autoincrement())
+  modelId     Int
+  model       AiModel  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  departmentId Int?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  tokenLimit   Int      // departmandaki tüm kullanıcılar için toplam limit
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
