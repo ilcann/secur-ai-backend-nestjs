@@ -11,4 +11,11 @@ export class ChatService {
     });
     return chat;
   }
+  async getRecentChats(userId: number, limit = 10): Promise<Chat[]> {
+    return this.prisma.chat.findMany({
+      where: { ownerId: userId },
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+    });
+  }
 }

@@ -5,6 +5,8 @@ import {
   Request,
   InternalServerErrorException,
   HttpException,
+  Get,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { AuthenticatedRequest } from 'src/common/dto/authenticated-request.interface';
@@ -14,7 +16,7 @@ import { ChatMapper } from './mapper/chat.mapper';
 import { CreateChatResponseDto } from './dto/create-chat-response.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
-@Controller('chat')
+@Controller('chats')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
 export class ChatController {
@@ -42,6 +44,34 @@ export class ChatController {
           error instanceof HttpException
             ? error.message
             : 'Registration failed',
+      };
+    }
+  }
+  @Get('recent')
+  async getRecentChats(
+    @Request() req: AuthenticatedRequest,
+    @Query('limit') limit = 10,
+  ) {
+    try {
+      const userId = Number(req.user.id); // Extract the user ID from the request
+      const recentChats = await this.chatService.getRecentChats(userId, limit);
+
+      const recentChatDtos: ChatDto[] = recentChats.map((chat) =>
+        ChatMapper.toDto(chat),
+      );
+
+      return {
+        success: true,
+        message: 'Recent chats fetched successfully',
+        data: recentChatDtos,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof HttpException
+            ? error.message
+            : 'Failed to fetch recent chats',
       };
     }
   }
