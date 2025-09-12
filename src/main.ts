@@ -3,18 +3,19 @@ import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  const allowedOrigins = [
-    `http://${process.env.FASTAPI_HOST}:${process.env.FASTAPI_PORT}`,
-    `http://${process.env.VITE_WEB_HOST}:${process.env.VITE_WEB_PORT}`,
-  ];
+  const frontend = `http://${process.env.NEXTJS_HOST}:${process.env.NEXTJS_PORT}`;
+  const fastapi = `http://${process.env.FASTAPI_HOST}:${process.env.FASTAPI_PORT}`;
+  const allowedOrigins = [frontend, fastapi];
 
   app.enableCors({
     origin: allowedOrigins,
