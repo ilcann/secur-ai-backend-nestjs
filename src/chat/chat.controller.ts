@@ -4,7 +4,6 @@ import {
   UseGuards,
   Request,
   InternalServerErrorException,
-  HttpException,
   Get,
   Query,
 } from '@nestjs/common';
@@ -25,29 +24,19 @@ export class ChatController {
   constructor(private chatService: ChatService) {}
 
   @Post()
-  async createChat(@Request() req: AuthenticatedRequest) {
-    try {
-      const ownerId = Number(req.user.id);
-      const chat = await this.chatService.create(ownerId);
-      if (!chat) throw new InternalServerErrorException('Chat creation failed');
+  async createChat(
+    @Request() req: AuthenticatedRequest,
+  ): Promise<ApiResponse<CreateChatResponseDto>> {
+    const ownerId = Number(req.user.id);
+    const chat = await this.chatService.create(ownerId);
+    if (!chat) throw new InternalServerErrorException('Chat creation failed');
 
-      const chatDto: ChatDto = ChatMapper.toDto(chat);
-      const response: CreateChatResponseDto = { chat: chatDto };
+    const chatDto: ChatDto = ChatMapper.toDto(chat);
 
-      return {
-        success: true,
-        message: 'Chat created successfully',
-        data: response,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message:
-          error instanceof HttpException
-            ? error.message
-            : 'Registration failed',
-      };
-    }
+    return {
+      message: 'Chat created successfully',
+      data: { chat: chatDto },
+    };
   }
   @Get('recent')
   async getRecentChats(
