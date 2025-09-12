@@ -15,6 +15,8 @@ import { ChatDto } from './dto/chat.dto';
 import { ChatMapper } from './mapper/chat.mapper';
 import { CreateChatResponseDto } from './dto/create-chat-response.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { RecentChatsDto } from './dto/recent-chats.dto';
+import { ApiResponse } from 'src/common/dto/api-response.dto';
 
 @Controller('chats')
 @ApiBearerAuth()
@@ -51,28 +53,17 @@ export class ChatController {
   async getRecentChats(
     @Request() req: AuthenticatedRequest,
     @Query('limit') limit = 10,
-  ) {
-    try {
-      const userId = Number(req.user.id); // Extract the user ID from the request
-      const recentChats = await this.chatService.getRecentChats(userId, limit);
+  ): Promise<ApiResponse<RecentChatsDto>> {
+    const userId = Number(req.user.id); // Extract the user ID from the request
+    const recentChats = await this.chatService.getRecentChats(userId, limit);
 
-      const recentChatDtos: ChatDto[] = recentChats.map((chat) =>
-        ChatMapper.toDto(chat),
-      );
+    const recentChatDtos: ChatDto[] = recentChats.map((chat) =>
+      ChatMapper.toDto(chat),
+    );
 
-      return {
-        success: true,
-        message: 'Recent chats fetched successfully',
-        data: recentChatDtos,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message:
-          error instanceof HttpException
-            ? error.message
-            : 'Failed to fetch recent chats',
-      };
-    }
+    return {
+      message: 'Recent chats fetched successfully',
+      data: { chats: recentChatDtos },
+    };
   }
 }

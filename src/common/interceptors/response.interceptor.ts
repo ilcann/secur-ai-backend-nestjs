@@ -5,26 +5,25 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { Observable, map } from 'rxjs';
+import { ApiResponse } from '../dto/api-response.dto';
 
-export interface ResponseFormat<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-}
-
+/**
+ * Standart Response Interceptor.
+ * Controller'dan dönen ApiResponse<T> ile uyumlu.
+ */
 @Injectable()
 export class ResponseInterceptor<T>
-  implements NestInterceptor<T, ResponseFormat<T>>
+  implements
+    NestInterceptor<ApiResponse<T>, ApiResponse<T> & { statusCode: number }>
 {
   intercept(
     context: ExecutionContext,
-    next: CallHandler<T>,
-  ): Observable<ResponseFormat<T>> {
+    next: CallHandler<ApiResponse<T>>,
+  ): Observable<ApiResponse<T> & { statusCode: number }> {
     return next.handle().pipe(
-      map((data: T) => ({
+      map((apiRes) => ({
         statusCode: 200,
-        message: 'OK',
-        data,
+        ...apiRes,
       })),
     );
   }
