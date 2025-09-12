@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
@@ -23,6 +24,8 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
   });
+
+  app.use(cookieParser());
 
   const config = new DocumentBuilder()
     .setTitle('Secur Ai API Documentation')

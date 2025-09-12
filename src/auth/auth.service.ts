@@ -1,5 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { comparePassword, hashPassword } from 'src/common/utils/hash.util';
+import { comparePassword } from 'src/common/utils/hash.util';
 import { UserDto } from 'src/user/dto/user.dto';
 import { UserMapper } from 'src/user/mappers/user.mapper';
 import { UserService } from 'src/user/user.service';
@@ -14,15 +14,10 @@ export class AuthService {
     private userService: UserService,
   ) {}
   async validateUser(email: string, password: string): Promise<UserDto | null> {
-    console.log('Validating user with email:', email);
-    console.log('Provided password:', await hashPassword(password));
     const user = await this.userService.findByEmail(email);
-    console.log('User found:', user);
-    console.log('User password:', user?.password);
     if (!user) return null;
 
     const isPasswordValid = await comparePassword(password, user.password);
-    console.log('Is password valid:', isPasswordValid);
     if (!isPasswordValid) return null;
 
     return UserMapper.toDto(user);
