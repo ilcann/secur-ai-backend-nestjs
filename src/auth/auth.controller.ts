@@ -8,7 +8,7 @@ import { RegisterResponseDto } from './dto/register-response.dto';
 import { RegisterRequestDto } from './dto/register-request.dto';
 import { UserDto } from 'src/user/dto/user.dto';
 import { UserMapper } from 'src/user/mappers/user.mapper';
-import type { Response as ResponseType } from 'express';
+import type { CookieOptions, Response as ResponseType } from 'express';
 import { ApiResponse } from 'src/common/dto/api-response.dto';
 
 @Controller('auth')
@@ -31,18 +31,20 @@ export class AuthController {
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const accessToken = this.authService.issueAccessToken(user);
-    console.log('Generated Access Token:', accessToken); // Log the generated token
 
-    response.cookie('access_token', accessToken, {
+    const cookieOptions: CookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 3600 * 1000, // 1 hour
-    });
+      secure: true,
+      sameSite: 'none',
+    };
+    response.cookie('access_token', accessToken, cookieOptions);
 
     const responseDto: ApiResponse<LoginResponseDto> = {
       message: 'Login successful',
       data: { user },
     };
+
+    console.log(responseDto);
     return responseDto;
   }
 
