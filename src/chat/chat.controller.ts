@@ -15,7 +15,7 @@ import { ChatMapper } from './mapper/chat.mapper';
 import { CreateChatResponseDto } from './dto/create-chat-response.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { RecentChatsDto } from './dto/recent-chats.dto';
-import { ApiResponse } from 'src/common/dto/api-response.dto';
+import { ControllerResponse } from 'src/common/dto/controller-response.dto';
 
 @Controller('chats')
 @ApiBearerAuth()
@@ -26,23 +26,23 @@ export class ChatController {
   @Post()
   async createChat(
     @Request() req: AuthenticatedRequest,
-  ): Promise<ApiResponse<CreateChatResponseDto>> {
+  ): Promise<ControllerResponse<CreateChatResponseDto>> {
     const ownerId = Number(req.user.id);
     const chat = await this.chatService.create(ownerId);
     if (!chat) throw new InternalServerErrorException('Chat creation failed');
 
     const chatDto: ChatDto = ChatMapper.toDto(chat);
 
-    return {
+    return Promise.resolve({
       message: 'Chat created successfully',
       data: { chat: chatDto },
-    };
+    });
   }
   @Get('recent')
   async getRecentChats(
     @Request() req: AuthenticatedRequest,
     @Query('limit') limit = 10,
-  ): Promise<ApiResponse<RecentChatsDto>> {
+  ): Promise<ControllerResponse<RecentChatsDto>> {
     const userId = Number(req.user.id); // Extract the user ID from the request
     const recentChats = await this.chatService.getRecentChats(userId, limit);
 
@@ -50,9 +50,9 @@ export class ChatController {
       ChatMapper.toDto(chat),
     );
 
-    return {
+    return Promise.resolve({
       message: 'Recent chats fetched successfully',
       data: { chats: recentChatDtos },
-    };
+    });
   }
 }

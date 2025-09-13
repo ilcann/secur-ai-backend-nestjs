@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import cookieParser from 'cookie-parser';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   const frontend = `http://${process.env.NEXTJS_HOST}:${process.env.NEXTJS_PORT}`;

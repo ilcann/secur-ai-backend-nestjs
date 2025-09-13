@@ -1,29 +1,34 @@
+// src/common/interceptors/response.interceptor.ts
 import {
   CallHandler,
   ExecutionContext,
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ApiResponse } from '../dto/api-response.dto';
+import { ControllerResponse } from '../dto/controller-response.dto';
 
-/**
- * Standart Response Interceptor.
- * Controller'dan dönen ApiResponse<T> ile uyumlu.
- */
 @Injectable()
 export class ResponseInterceptor<T>
-  implements
-    NestInterceptor<ApiResponse<T>, ApiResponse<T> & { statusCode: number }>
+  implements NestInterceptor<T, ApiResponse<T>>
 {
   intercept(
     context: ExecutionContext,
-    next: CallHandler<ApiResponse<T>>,
-  ): Observable<ApiResponse<T> & { statusCode: number }> {
+    next: CallHandler,
+  ): Observable<ApiResponse<T>> {
+    const ctx = context.switchToHttp();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const response = ctx.getResponse();
+
     return next.handle().pipe(
-      map((apiRes) => ({
-        statusCode: 200,
-        ...apiRes,
+      map((result: ControllerResponse<T>) => ({
+        success: true,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        status: response.statusCode,
+        message: result.message,
+        data: result.data,
       })),
     );
   }

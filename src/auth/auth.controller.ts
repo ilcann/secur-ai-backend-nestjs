@@ -9,7 +9,7 @@ import { RegisterRequestDto } from './dto/register-request.dto';
 import { UserDto } from 'src/user/dto/user.dto';
 import { UserMapper } from 'src/user/mappers/user.mapper';
 import type { CookieOptions, Response as ResponseType } from 'express';
-import { ApiResponse } from 'src/common/dto/api-response.dto';
+import { ControllerResponse } from 'src/common/dto/controller-response.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -26,7 +26,7 @@ export class AuthController {
   async login(
     @Body() dto: LoginRequestDto,
     @Res({ passthrough: true }) response: ResponseType,
-  ): Promise<ApiResponse<LoginResponseDto>> {
+  ): Promise<ControllerResponse<LoginResponseDto>> {
     const user = await this.authService.validateUser(dto.email, dto.password);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
@@ -39,13 +39,10 @@ export class AuthController {
     };
     response.cookie('access_token', accessToken, cookieOptions);
 
-    const responseDto: ApiResponse<LoginResponseDto> = {
+    return Promise.resolve({
       message: 'Login successful',
       data: { user },
-    };
-
-    console.log(responseDto);
-    return responseDto;
+    });
   }
 
   @Post('logout')
@@ -53,10 +50,17 @@ export class AuthController {
     summary: 'User logout',
     description: 'Clears the access_token cookie to log out the user',
   })
-  logout(@Res({ passthrough: true }) response: ResponseType) {
+  logout(
+    @Res({ passthrough: true }) response: ResponseType,
+  ): Promise<ControllerResponse<void>> {
     response.clearCookie('access_token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
+    });
+
+    return Promise.resolve({
+      message: 'Logout successful',
+      data: undefined,
     });
   }
 
@@ -71,7 +75,7 @@ export class AuthController {
   })
   async register(
     @Body() dto: RegisterRequestDto,
-  ): Promise<ApiResponse<RegisterResponseDto>> {
+  ): Promise<ControllerResponse<RegisterResponseDto>> {
     const user = await this.authService.registerUser(
       dto.email,
       dto.password,
@@ -79,11 +83,10 @@ export class AuthController {
       dto.lastName,
     );
     const userDto: UserDto = UserMapper.toDto(user);
-    const response: ApiResponse<RegisterResponseDto> = {
+
+    return Promise.resolve({
       message: 'User registered successfully',
       data: { user: userDto },
-    };
-
-    return response;
+    });
   }
 }
