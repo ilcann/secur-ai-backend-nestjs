@@ -5,11 +5,11 @@ export class MessageMapper {
   static toDto(message: Message & { entities?: MessageEntity[] }): MessageDto {
     return {
       id: message.id,
-      role: message.role,
+      role: message.role.toLowerCase(),
       content: message.content,
       maskedContent: message.maskedContent,
-      entities: message.entities,
-      status: message.status,
+      entities: message.entities || [],
+      status: message.status.toLowerCase(),
       modelId: message.modelId,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,

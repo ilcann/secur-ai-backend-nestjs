@@ -17,7 +17,7 @@ import { CreateMessageDto } from './dto/create-message.dto';
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
-@Controller('message')
+@Controller('messages')
 export class MessageController {
   constructor(private messageService: MessageService) {}
 

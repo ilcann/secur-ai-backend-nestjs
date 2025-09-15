@@ -1,12 +1,12 @@
-import { MessageEntity, MessageRole, MessageStatus } from '@prisma/client';
+import { MessageEntity } from '@prisma/client';
 
 export type MessageDto = {
   id: number;
-  role: MessageRole;
+  role: string;
   content: string;
   maskedContent?: string;
   entities?: MessageEntity[] | [];
-  status: MessageStatus;
+  status: string;
   modelId?: number;
   createdAt: Date;
   updatedAt?: Date;
