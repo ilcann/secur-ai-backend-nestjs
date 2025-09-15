@@ -31,6 +31,21 @@ async function main() {
       isSystem: true,
     },
   });
+
+  await prisma.user.upsert({
+    where: { email: 'ai-bot@tssx.com' },
+    update: {},
+    create: {
+      email: 'ai-bot@tssx.com',
+      firstName: 'AI',
+      lastName: 'Assistant',
+      password: hashedPassword,
+      role: 'ADMIN',
+      status: 'ACTIVE',
+      departmentId: allDepartment.id,
+      isSystem: true,
+    },
+  });
 }
 
 main()

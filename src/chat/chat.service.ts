@@ -7,7 +7,7 @@ export class ChatService {
   constructor(private prisma: PrismaService) {}
   async create(ownerId: number): Promise<Chat> {
     const chat = await this.prisma.chat.create({
-      data: { ownerId },
+      data: { ownerId, title: 'New Chat' },
     });
     return chat;
   }

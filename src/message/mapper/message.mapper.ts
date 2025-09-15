@@ -1,0 +1,18 @@
+// src/common/mappers/user.mapper.ts
+import { Message, MessageEntity } from '@prisma/client';
+import { MessageDto } from '../dto/message.dto';
+export class MessageMapper {
+  static toDto(message: Message & { entities?: MessageEntity[] }): MessageDto {
+    return {
+      id: message.id,
+      role: message.role,
+      content: message.content,
+      maskedContent: message.maskedContent,
+      entities: message.entities,
+      status: message.status,
+      modelId: message.modelId,
+      createdAt: message.createdAt,
+      updatedAt: message.updatedAt,
+    };
+  }
+}
