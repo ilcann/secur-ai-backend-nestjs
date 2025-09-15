@@ -26,9 +26,9 @@ export class ResponseInterceptor<T>
       map((result: ControllerResponse<T>) => ({
         success: true,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        status: response.statusCode,
+        statusCode: response.statusCode,
         message: result.message,
-        data: result.data,
+        data: result?.data,
       })),
     );
   }
