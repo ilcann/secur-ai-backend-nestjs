@@ -42,9 +42,14 @@ export class ChatController {
   async getRecentChats(
     @Request() req: AuthenticatedRequest,
     @Query('limit') limit = 10,
+    @Query('offset') offset = 0,
   ): Promise<ControllerResponse<RecentChatsDto>> {
     const userId = Number(req.user.id); // Extract the user ID from the request
-    const recentChats = await this.chatService.getRecentChats(userId, limit);
+    const recentChats = await this.chatService.getRecentChats(
+      userId,
+      limit,
+      offset,
+    );
 
     const recentChatDtos: ChatDto[] = recentChats.map((chat) =>
       ChatMapper.toDto(chat),

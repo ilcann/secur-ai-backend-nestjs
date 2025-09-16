@@ -24,10 +24,10 @@ export class MessageController {
   @Get()
   async getMessages(
     @Headers('x-chat-id') chatId: string,
-  ): Promise<ControllerResponse<MessageDto[]>> {
+  ): Promise<ControllerResponse<{ messages: MessageDto[] }>> {
     const messages = await this.messageService.getMessages(chatId);
     return Promise.resolve({
-      data: messages,
+      data: { messages },
       message: 'Messages fetched successfully',
     });
   }
@@ -38,7 +38,7 @@ export class MessageController {
     @Headers('x-model-id') modelId: number,
     @Request() req: AuthenticatedRequest,
     @Body() body: CreateMessageDto,
-  ): Promise<ControllerResponse<MessageDto>> {
+  ): Promise<ControllerResponse<{ message: MessageDto }>> {
     const messages = await this.messageService.createUserMessage({
       senderId: Number(req.user.id),
       chatId,
@@ -46,7 +46,7 @@ export class MessageController {
       modelId: Number(modelId),
     });
     return Promise.resolve({
-      data: messages,
+      data: { message: messages },
       message: 'Messages created successfully',
     });
   }

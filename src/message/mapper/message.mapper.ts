@@ -5,6 +5,8 @@ export class MessageMapper {
   static toDto(message: Message & { entities?: MessageEntity[] }): MessageDto {
     return {
       id: message.id,
+      chatId: message.chatId,
+      senderId: message.senderId,
       role: message.role.toLowerCase(),
       content: message.content,
       maskedContent: message.maskedContent,
