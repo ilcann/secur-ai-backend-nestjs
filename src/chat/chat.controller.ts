@@ -45,19 +45,18 @@ export class ChatController {
     @Query('offset') offset = 0,
   ): Promise<ControllerResponse<RecentChatsDto>> {
     const userId = Number(req.user.id); // Extract the user ID from the request
-    const recentChats = await this.chatService.getRecentChats(
-      userId,
-      limit,
-      offset,
-    );
+    const rawChats = await this.chatService.getChats(userId, limit, offset);
 
-    const recentChatDtos: ChatDto[] = recentChats.map((chat) =>
-      ChatMapper.toDto(chat),
-    );
+    const chatDtos: ChatDto[] = rawChats.map((chat) => ChatMapper.toDto(chat));
+    const total = await this.chatService.totalChats(userId);
 
     return Promise.resolve({
-      message: 'Recent chats fetched successfully',
-      data: { chats: recentChatDtos },
+      message: 'Chats fetched successfully',
+      data: {
+        chats: chatDtos,
+        hasMore: offset + chatDtos.length < total,
+        nextOffset: offset + chatDtos.length,
+      },
     });
   }
 }
