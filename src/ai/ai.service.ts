@@ -14,6 +14,9 @@ export class AiService {
       },
     });
   }
+  async findProvider(id: number) {
+    return this.prisma.aiProvider.findUnique({ where: { id } });
+  }
 
   async toggleProvider(providerId: number, isActive: boolean) {
     return this.prisma.aiProvider.update({
@@ -29,6 +32,14 @@ export class AiService {
     });
   }
 
+  async listModels() {
+    return this.prisma.aiModel.findMany();
+  }
+
+  async listProviders() {
+    return this.prisma.aiProvider.findMany();
+  }
+
   async listActiveProviders() {
     return this.prisma.aiProvider.findMany({ where: { isActive: true } });
   }
@@ -36,7 +47,6 @@ export class AiService {
   async listActiveModels() {
     return this.prisma.aiModel.findMany({
       where: { isActive: true, provider: { isActive: true } },
-      include: { provider: true },
     });
   }
 }

@@ -32,18 +32,22 @@ async function main() {
     },
   });
 
-  await prisma.user.upsert({
-    where: { email: 'ai-bot@tssx.com' },
+  await prisma.aiProvider.upsert({
+    where: { name: 'OPENAI' },
     update: {},
     create: {
-      email: 'ai-bot@tssx.com',
-      firstName: 'AI',
-      lastName: 'Assistant',
-      password: hashedPassword,
-      role: 'ADMIN',
-      status: 'ACTIVE',
-      departmentId: allDepartment.id,
-      isSystem: true,
+      name: 'OPENAI',
+      apiKey: 'sk-...',
+    },
+  });
+
+  await prisma.aiModel.upsert({
+    where: { name: 'gpt-3.5-turbo' },
+    update: {},
+    create: {
+      name: 'gpt-3.5-turbo',
+      description: 'A variant of GPT-3 optimized for chat',
+      providerId: 1,
     },
   });
 }
