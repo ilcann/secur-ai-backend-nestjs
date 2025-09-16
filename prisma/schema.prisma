@@ -221,7 +221,7 @@ model AiProvider {
   name      AiProviderName  @unique
 
   apiKey    String?
-  active    Boolean         @default(false)
+  isActive    Boolean         @default(false)
 
   models    AiModel[]
 
@@ -234,7 +234,7 @@ model AiModel {
   name        String  @unique
   description String?
 
-  active     Boolean @default(false)
+  isActive     Boolean @default(false)
 
   provider    AiProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
   providerId  Int
