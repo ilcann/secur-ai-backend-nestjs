@@ -73,8 +73,8 @@ export class ChatController {
       message: 'Chats fetched successfully',
       data: {
         chats: chatDtos,
-        hasMore: offset + chatDtos.length < total,
-        nextOffset: offset + chatDtos.length,
+        hasMore: Number(offset) + chatDtos.length < total,
+        nextOffset: Number(offset) + chatDtos.length,
       },
     });
   }
