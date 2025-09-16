@@ -38,7 +38,7 @@ export class ChatController {
       data: { chat: chatDto },
     });
   }
-  @Get('recent')
+  @Get('')
   @ApiBearerAuth()
   @ApiQuery({
     name: 'limit',
