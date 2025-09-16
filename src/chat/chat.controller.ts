@@ -13,7 +13,7 @@ import { ChatService } from './chat.service';
 import { ChatDto } from './dto/chat.dto';
 import { ChatMapper } from './mapper/chat.mapper';
 import { CreateChatResponseDto } from './dto/create-chat-response.dto';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { RecentChatsDto } from './dto/recent-chats.dto';
 import { ControllerResponse } from 'src/common/dto/controller-response.dto';
 
@@ -39,13 +39,32 @@ export class ChatController {
     });
   }
   @Get('recent')
+  @ApiBearerAuth()
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of chats to fetch',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'Offset for pagination',
+    example: 0,
+  })
   async getRecentChats(
     @Request() req: AuthenticatedRequest,
     @Query('limit') limit = 10,
     @Query('offset') offset = 0,
   ): Promise<ControllerResponse<RecentChatsDto>> {
     const userId = Number(req.user.id); // Extract the user ID from the request
-    const rawChats = await this.chatService.getChats(userId, limit, offset);
+    const rawChats = await this.chatService.getChats(
+      userId,
+      Number(limit),
+      Number(offset),
+    );
 
     const chatDtos: ChatDto[] = rawChats.map((chat) => ChatMapper.toDto(chat));
     const total = await this.chatService.totalChats(userId);

@@ -19,7 +19,7 @@ export class ChatService {
   async getChats(userId: number, limit = 10, offset = 0): Promise<Chat[]> {
     const chats = await this.prisma.chat.findMany({
       where: { ownerId: userId },
-      orderBy: { updatedAt: 'asc' },
+      orderBy: { updatedAt: 'desc' },
       take: limit,
       skip: offset,
     });
