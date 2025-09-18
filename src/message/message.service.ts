@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { MessageMapper } from './mapper/message.mapper';
 import { MessageDto } from './dto/message.dto';
@@ -11,6 +11,7 @@ import {
 import { EntityDto } from 'src/entity/dto/entity.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { ChatMessage } from './dto/chat-message.dto';
 
 @Injectable()
 export class MessageService {
@@ -60,6 +61,15 @@ export class MessageService {
     senderId: number;
     modelId: number;
   }): Promise<MessageDto> {
+    const lastMessage = await this.prisma.message.findFirst({
+      where: { chatId: data.chatId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (lastMessage && lastMessage.role === MessageRole.USER) {
+      throw new BadRequestException(
+        'Cannot create user message: last message is also from user',
+      );
+    }
     const message = await this.prisma.message.create({
       data: {
         chatId: data.chatId,
@@ -71,6 +81,21 @@ export class MessageService {
       },
     });
     return MessageMapper.toDto(message);
+  }
+  createAIDraftMessage(data: {
+    chatId: string;
+    modelId: number;
+  }): Promise<Message> {
+    return this.prisma.message.create({
+      data: {
+        senderId: 2, // System user ID
+        chatId: data.chatId,
+        modelId: data.modelId,
+        content: '',
+        role: MessageRole.ASSISTANT,
+        status: MessageStatus.CREATED,
+      },
+    });
   }
 
   async updateMessageEntities(messageId: number, entities: EntityDto[]) {
@@ -90,5 +115,30 @@ export class MessageService {
         });
       }
     });
+  }
+
+  async updateMaskedContent(
+    messageId: number,
+    maskedContent: string,
+  ): Promise<Message> {
+    return this.prisma.message.update({
+      where: { id: messageId },
+      data: { maskedContent },
+    });
+  }
+
+  async buildContext(chatId: string, limit = 20): Promise<ChatMessage[]> {
+    const messages = await this.prisma.message.findMany({
+      where: { chatId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    const ordered = messages.reverse();
+
+    return ordered.map((msg) => ({
+      role: msg.role === MessageRole.USER ? 'user' : 'assistant',
+      content: msg.role === MessageRole.USER ? msg.maskedContent : msg.content,
+    }));
   }
 }

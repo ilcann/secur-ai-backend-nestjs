@@ -27,26 +27,53 @@ export class MessageProcessor extends WorkerHost {
         await this.messageService.updateMessageEntities(message.id, entities);
         await this.messageQueue.add('message.entities.updated', {
           messageId: message.id,
+          chatId: message.chatId,
+          senderId: message.senderId,
+          modelId: message.modelId,
         });
         break;
       }
       case 'message.entities.updated': {
-        const { messageId } = job.data as { messageId: number };
+        const { messageId } = job.data as {
+          messageId: number;
+          chatId: string;
+          senderId: number;
+          modelId: number;
+        };
         await this.maskService.setEntityMaskFlags(messageId);
         const maskedContent = await this.maskService.applyMask(messageId);
+        await this.messageService.updateMaskedContent(messageId, maskedContent);
         await this.messageQueue.add('message.masked', {
-          maskedContent: maskedContent,
+          ...job.data,
+          maskedContent,
         });
         break;
       }
-      case 'message.masked':
-        // TODO: implement actual processing logic
-        console.log('Processing message masked job:', job.data);
+      case 'message.masked': {
+        const { chatId, modelId } = job.data as {
+          messageId: number;
+          chatId: string;
+          senderId: number;
+          maskedContent: string;
+          modelId: number;
+        };
+        const aiDraft = await this.messageService.createAIDraftMessage({
+          chatId,
+          modelId,
+        });
+        await this.messageQueue.add('llm.draft.created', {
+          aiDraft,
+        });
         break;
-      case 'llm.draft.created':
-        // TODO: implement actual processing logic
-        console.log('Processing LLM draft created job:', job.data);
+      }
+      case 'llm.draft.created': {
+        const { aiDraft } = job.data as { aiDraft: Message };
+
+        const context = await this.messageService.buildContext(aiDraft.chatId);
+
+        const stream = this.llmService.streamResponse(aiDraft, context);
         break;
+      }
     }
   }
   onCompleted(job: Job) {

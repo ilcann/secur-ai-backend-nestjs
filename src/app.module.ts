@@ -13,6 +13,7 @@ import { WebsocketsModule } from './websockets/websockets.module';
 import { EntityModule } from './entity/entity.module';
 import { LabelModule } from './label/label.module';
 import { MaskModule } from './mask/mask.module';
+import { LlmModule } from './llm/llm.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { MaskModule } from './mask/mask.module';
     EntityModule,
     LabelModule,
     MaskModule,
+    LlmModule,
   ],
   controllers: [AppController],
   providers: [AppService],
