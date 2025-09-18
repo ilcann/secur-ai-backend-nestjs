@@ -4,6 +4,7 @@ import { lastValueFrom } from 'rxjs/internal/lastValueFrom';
 import { NerEntityDto } from './dto/ner-entity.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EntityDto } from './dto/entity.dto';
+import { MessageService } from 'src/message/message.service';
 
 const fastApiHost = process.env.FASTAPI_HOST || 'localhost';
 const fastApiPort = process.env.FASTAPI_PORT || '3003';
@@ -14,17 +15,17 @@ export class EntityService {
   constructor(
     private readonly httpService: HttpService,
     private readonly prisma: PrismaService,
+    private readonly messageService: MessageService,
   ) {}
 
-  async detectEntities(
-    messageId: number,
-    content: string,
-  ): Promise<EntityDto[]> {
+  async detectEntities(messageId: number): Promise<EntityDto[]> {
+    const message = await this.messageService.getOne(messageId);
+
     const response = await lastValueFrom(
       this.httpService.post<{ entities: NerEntityDto[] }>(
         `${fastApiUrl}/fastapi/ner/extract`,
         {
-          text: content,
+          text: message.content,
         },
       ),
     );

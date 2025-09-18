@@ -12,6 +12,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { WebsocketsModule } from './websockets/websockets.module';
 import { EntityModule } from './entity/entity.module';
 import { LabelModule } from './label/label.module';
+import { MaskModule } from './mask/mask.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { LabelModule } from './label/label.module';
     WebsocketsModule,
     EntityModule,
     LabelModule,
+    MaskModule,
   ],
   controllers: [AppController],
   providers: [AppService],
