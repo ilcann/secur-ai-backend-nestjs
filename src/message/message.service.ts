@@ -3,10 +3,16 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { MessageMapper } from './mapper/message.mapper';
 import { MessageDto } from './dto/message.dto';
 import { MessageRole, MessageStatus } from '@prisma/client';
+import { EntityDto } from 'src/entity/dto/entity.dto';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class MessageService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @InjectQueue('messages') private messageQueue: Queue,
+  ) {}
   getMessages(chatId: string): Promise<MessageDto[]> {
     const messages = this.prisma.message.findMany({
       where: { chatId },
@@ -36,5 +42,23 @@ export class MessageService {
       },
     });
     return MessageMapper.toDto(message);
+  }
+
+  async updateMessageEntities(messageId: number, entities: EntityDto[]) {
+    await this.prisma.messageEntity.createMany({
+      data: entities.map((e) => ({
+        messageId: messageId,
+        entityLabelId: e.entityLabelId,
+        value: e.value,
+        start: e.start,
+        end: e.end,
+        maskedValue: e.maskedValue,
+      })),
+    });
+
+    await this.messageQueue.add('message.entities.updated', {
+      messageId: messageId,
+      entities,
+    });
   }
 }

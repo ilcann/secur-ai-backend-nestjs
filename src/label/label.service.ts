@@ -35,6 +35,7 @@ export class LabelService {
       },
     });
   }
+
   async syncLabels() {
     try {
       const response = await lastValueFrom(
