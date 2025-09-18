@@ -9,4 +9,4 @@ const bullConfig = BullModule.forRoot({
   defaultJobOptions: { attempts: 1 },
 });
 
-export default bullConfig;
+export { bullConfig };

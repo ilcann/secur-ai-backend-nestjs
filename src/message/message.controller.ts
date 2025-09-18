@@ -14,12 +14,17 @@ import { ControllerResponse } from 'src/common/dto/controller-response.dto';
 import { MessageDto } from './dto/message.dto';
 import type { AuthenticatedRequest } from 'src/common/dto/authenticated-request.interface';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
 @Controller('messages')
 export class MessageController {
-  constructor(private messageService: MessageService) {}
+  constructor(
+    private messageService: MessageService,
+    @InjectQueue('messages') private messageQueue: Queue,
+  ) {}
 
   @Get()
   async getMessages(
@@ -39,14 +44,19 @@ export class MessageController {
     @Request() req: AuthenticatedRequest,
     @Body() body: CreateMessageDto,
   ): Promise<ControllerResponse<{ message: MessageDto }>> {
-    const messages = await this.messageService.createUserMessage({
+    const message = await this.messageService.createUserMessage({
       senderId: Number(req.user.id),
       chatId,
       content: body.content,
       modelId: Number(modelId),
     });
+
+    await this.messageQueue.add('user_draft.created', {
+      message: message,
+    });
+
     return Promise.resolve({
-      data: { message: messages },
+      data: { message: message },
       message: 'Messages created successfully',
     });
   }

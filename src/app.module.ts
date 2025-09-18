@@ -7,19 +7,32 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { MessageModule } from './message/message.module';
 import { AiModule } from './ai/ai.module';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { QueuesModule } from './queues/queues.module';
+import { BullModule } from '@nestjs/bullmq';
+import { WebsocketsModule } from './websockets/websockets.module';
+import { EntityModule } from './entity/entity.module';
+import { LabelModule } from './label/label.module';
 
 @Module({
   imports: [
-    EventEmitterModule.forRoot(),
-    ChatModule,
+    BullModule.forRoot({
+      // TODO: Redis connection options proces.env not working
+      connection: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: Number(process.env.REDIS_PORT) || 6379,
+      },
+      defaultJobOptions: { attempts: 1 },
+    }),
     PrismaModule,
     AuthModule,
     UserModule,
+    ChatModule,
     MessageModule,
     AiModule,
     QueuesModule,
+    WebsocketsModule,
+    EntityModule,
+    LabelModule,
   ],
   controllers: [AppController],
   providers: [AppService],
