@@ -51,4 +51,16 @@ export class AuthService {
 
     return newUser;
   }
+
+  async verifyToken(token: string): Promise<UserDto | null> {
+    try {
+      const payload = this.jwtService.verify<JwtPayload>(token);
+      const user = await this.userService.findById(payload.sub);
+      if (!user) return null;
+      return UserMapper.toDto(user);
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      return null;
+    }
+  }
 }
