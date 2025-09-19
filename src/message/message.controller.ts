@@ -16,6 +16,7 @@ import type { AuthenticatedRequest } from 'src/common/dto/authenticated-request.
 import { CreateMessageDto } from './dto/create-message.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { ChatGateway } from 'src/websockets/chat.gateway';
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
@@ -23,6 +24,7 @@ import { Queue } from 'bullmq';
 export class MessageController {
   constructor(
     private messageService: MessageService,
+    private chatGateway: ChatGateway,
     @InjectQueue('messages') private messageQueue: Queue,
   ) {}
 
@@ -52,6 +54,7 @@ export class MessageController {
     });
 
     await this.messageQueue.add('user_draft.created', {
+      message: message,
       messageId: message.id,
       chatId: message.chatId,
       modelId: message.modelId,

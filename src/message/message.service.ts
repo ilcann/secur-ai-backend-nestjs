@@ -12,12 +12,14 @@ import { EntityDto } from 'src/entity/dto/entity.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ChatMessage } from './dto/chat-message.dto';
+import { ChatGateway } from 'src/websockets/chat.gateway';
 
 @Injectable()
 export class MessageService {
   constructor(
     private prisma: PrismaService,
     @InjectQueue('messages') private messageQueue: Queue,
+    private chatGateway: ChatGateway,
   ) {}
 
   async getOne(messageId: number): Promise<Message> {
@@ -80,6 +82,7 @@ export class MessageService {
         status: MessageStatus.CREATED,
       },
     });
+
     return MessageMapper.toDto(message);
   }
   createAIDraftMessage(data: {

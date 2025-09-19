@@ -11,6 +11,7 @@ import { LlmService } from 'src/llm/llm.service';
 import { LlmProviderService } from 'src/llm-provider/llm-provider.service';
 import { LlmModelService } from 'src/llm-model/llm-model.service';
 import { ChatGateway } from 'src/websockets/chat.gateway';
+import { EntityDto } from 'src/entity/dto/entity.dto';
 
 @Processor('messages')
 export class MessageProcessor extends WorkerHost {
@@ -45,19 +46,27 @@ export class MessageProcessor extends WorkerHost {
           chatId: chatId,
           senderId: senderId,
           modelId: modelId,
+          entities: entities,
         });
         break;
       }
       case 'message.entities.updated': {
-        const { messageId } = job.data as {
+        const { messageId, chatId, senderId, entities } = job.data as {
           messageId: number;
           chatId: string;
           senderId: number;
           modelId: number;
+          entities: EntityDto[];
         };
         await this.maskService.setEntityMaskFlags(messageId);
         const maskedContent = await this.maskService.applyMask(messageId);
         await this.messageService.updateMaskedContent(messageId, maskedContent);
+        this.chatGateway.server.to(String(senderId)).emit('message.masked', {
+          chatId,
+          senderId,
+          maskedContent,
+          entities,
+        });
         await this.messageQueue.add('message.masked', {
           ...job.data,
           maskedContent,
@@ -76,14 +85,21 @@ export class MessageProcessor extends WorkerHost {
           chatId,
           modelId,
         });
+
         await this.messageQueue.add('llm.draft.created', {
+          chatId,
           senderId,
           aiDraft,
         });
+
+        this.chatGateway.server
+          .to(String(senderId))
+          .emit('llm.draft.created', { message: aiDraft });
         break;
       }
       case 'llm.draft.created': {
-        const { senderId, aiDraft } = job.data as {
+        const { chatId, senderId, aiDraft } = job.data as {
+          chatId: string;
           senderId: number;
           aiDraft: Message;
         };
@@ -108,9 +124,13 @@ export class MessageProcessor extends WorkerHost {
         for await (const chunk of stream!) {
           console.log('Stream chunk:', chunk);
           fullResponse += chunk;
+          this.chatGateway.server
+            .to(String(senderId))
+            .emit('llm.stream.chunk', { chatId, chunk });
         }
 
         await this.messageQueue.add('llm.stream.completed', {
+          chatId,
           senderId,
           aiDraftId: aiDraft.id,
           fullResponse,
@@ -118,20 +138,16 @@ export class MessageProcessor extends WorkerHost {
         break;
       }
       case 'llm.stream.completed': {
-        const { aiDraftId, fullResponse, senderId } = job.data as {
+        const { chatId, senderId } = job.data as {
+          chatId: string;
           aiDraftId: number;
           fullResponse: string;
           senderId: number;
         };
-        const message = await this.messageService.completeAiDraft(
-          aiDraftId,
-          fullResponse,
-        );
         this.chatGateway.server
           .to(String(senderId))
-          .emit('ai.stream.completed', {
-            messageId: aiDraftId,
-            message,
+          .emit('llm.stream.completed', {
+            chatId,
           });
         break;
       }
