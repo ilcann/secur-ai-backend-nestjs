@@ -4,6 +4,7 @@ import { MessageProcessor } from './message.processor';
 import { MessageModule } from 'src/message/message.module';
 import { EntityModule } from 'src/entity/entity.module';
 import { MaskModule } from 'src/mask/mask.module';
+import { LlmModule } from 'src/llm/llm.module';
 
 @Global()
 @Module({
@@ -12,6 +13,7 @@ import { MaskModule } from 'src/mask/mask.module';
     EntityModule,
     MessageModule,
     MaskModule,
+    LlmModule,
   ],
   providers: [MessageProcessor],
   exports: [BullModule],

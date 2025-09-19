@@ -52,7 +52,10 @@ export class MessageController {
     });
 
     await this.messageQueue.add('user_draft.created', {
-      message: message,
+      messageId: message.id,
+      chatId: message.chatId,
+      modelId: message.modelId,
+      senderId: message.senderId,
     });
 
     return Promise.resolve({

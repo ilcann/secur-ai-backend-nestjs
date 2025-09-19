@@ -14,6 +14,8 @@ import { EntityModule } from './entity/entity.module';
 import { LabelModule } from './label/label.module';
 import { MaskModule } from './mask/mask.module';
 import { LlmModule } from './llm/llm.module';
+import { LlmProviderModule } from './llm-provider/llm-provider.module';
+import { LlmModelModule } from './llm-model/llm-model.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { LlmModule } from './llm/llm.module';
     LabelModule,
     MaskModule,
     LlmModule,
+    LlmProviderModule,
+    LlmModelModule,
   ],
   controllers: [AppController],
   providers: [AppService],

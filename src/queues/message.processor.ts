@@ -22,14 +22,21 @@ export class MessageProcessor extends WorkerHost {
   async process(job: Job): Promise<any> {
     switch (job.name) {
       case 'user_draft.created': {
-        const { message } = job.data as { message: Message };
-        const entities = await this.entityService.detectEntities(message.id);
-        await this.messageService.updateMessageEntities(message.id, entities);
+        const { messageId, chatId, modelId, senderId } = job.data as {
+          messageId: number;
+          chatId: string;
+          modelId: number;
+          senderId: number;
+        };
+
+        const entities = await this.entityService.detectEntities(messageId);
+        await this.messageService.updateMessageEntities(messageId, entities);
+
         await this.messageQueue.add('message.entities.updated', {
-          messageId: message.id,
-          chatId: message.chatId,
-          senderId: message.senderId,
-          modelId: message.modelId,
+          messageId: messageId,
+          chatId: chatId,
+          senderId: senderId,
+          modelId: modelId,
         });
         break;
       }
@@ -71,7 +78,6 @@ export class MessageProcessor extends WorkerHost {
 
         const context = await this.messageService.buildContext(aiDraft.chatId);
 
-        const stream = this.llmService.streamResponse(aiDraft, context);
         break;
       }
     }
