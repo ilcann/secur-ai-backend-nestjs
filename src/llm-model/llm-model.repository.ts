@@ -12,7 +12,7 @@ export class LlmModelRepository {
     return await this.prisma.aiModel.findUnique({ where });
   }
 
-  async create(data: Prisma.AiModelCreateInput): Promise<AiModel> {
+  async create(data: Prisma.AiModelUncheckedCreateInput): Promise<AiModel> {
     return await this.prisma.aiModel.create({ data });
   }
 
