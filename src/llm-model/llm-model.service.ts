@@ -7,7 +7,7 @@ import { AiModel, Prisma } from '@prisma/client';
 export class LlmModelService {
   constructor(private readonly repo: LlmModelRepository) {}
 
-  async createModel(data: Prisma.AiModelCreateInput) {
+  async createModel(data: Prisma.AiModelUncheckedCreateInput) {
     return this.repo.create(data);
   }
 
