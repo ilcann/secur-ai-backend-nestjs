@@ -220,7 +220,7 @@ model AiProvider {
   id        Int             @id @default(autoincrement())
   name      AiProviderName  @unique
 
-  apiKey    String?
+  apiKey    String
   isActive    Boolean         @default(false)
 
   models    AiModel[]

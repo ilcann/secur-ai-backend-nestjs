@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { UpdateAiModelDto } from './dto/update-ai-model.dto';
 import { LlmModelRepository } from './llm-model.repository';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class LlmModelService {
   constructor(private readonly repo: LlmModelRepository) {}
+
+  async createModel(data: Prisma.AiModelCreateInput) {
+    return this.repo.create(data);
+  }
 
   async listModels() {
     return this.repo.findAll();
