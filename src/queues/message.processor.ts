@@ -10,6 +10,7 @@ import { Queue } from 'bullmq';
 import { LlmService } from 'src/llm/llm.service';
 import { LlmProviderService } from 'src/llm-provider/llm-provider.service';
 import { LlmModelService } from 'src/llm-model/llm-model.service';
+import { ChatGateway } from 'src/websockets/chat.gateway';
 
 @Processor('messages')
 export class MessageProcessor extends WorkerHost {
@@ -21,6 +22,7 @@ export class MessageProcessor extends WorkerHost {
     private llmService: LlmService,
     private llmProviderService: LlmProviderService,
     private llmModelService: LlmModelService,
+    private chatGateway: ChatGateway,
     @InjectQueue('messages') private messageQueue: Queue,
   ) {
     super();
@@ -63,7 +65,7 @@ export class MessageProcessor extends WorkerHost {
         break;
       }
       case 'message.masked': {
-        const { chatId, modelId } = job.data as {
+        const { senderId, chatId, modelId } = job.data as {
           messageId: number;
           chatId: string;
           senderId: number;
@@ -75,12 +77,16 @@ export class MessageProcessor extends WorkerHost {
           modelId,
         });
         await this.messageQueue.add('llm.draft.created', {
+          senderId,
           aiDraft,
         });
         break;
       }
       case 'llm.draft.created': {
-        const { aiDraft } = job.data as { aiDraft: Message };
+        const { senderId, aiDraft } = job.data as {
+          senderId: number;
+          aiDraft: Message;
+        };
 
         const context = (
           await this.messageService.buildContext(aiDraft.chatId)
@@ -105,17 +111,28 @@ export class MessageProcessor extends WorkerHost {
         }
 
         await this.messageQueue.add('llm.stream.completed', {
+          senderId,
           aiDraftId: aiDraft.id,
           fullResponse,
         });
         break;
       }
       case 'llm.stream.completed': {
-        const { aiDraftId, fullResponse } = job.data as {
+        const { aiDraftId, fullResponse, senderId } = job.data as {
           aiDraftId: number;
           fullResponse: string;
+          senderId: number;
         };
-        await this.messageService.completeAiDraft(aiDraftId, fullResponse);
+        const message = await this.messageService.completeAiDraft(
+          aiDraftId,
+          fullResponse,
+        );
+        this.chatGateway.server
+          .to(String(senderId))
+          .emit('ai.stream.completed', {
+            messageId: aiDraftId,
+            message,
+          });
         break;
       }
     }

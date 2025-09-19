@@ -7,6 +7,7 @@ import { MaskModule } from 'src/mask/mask.module';
 import { LlmModule } from 'src/llm/llm.module';
 import { LlmModelModule } from 'src/llm-model/llm-model.module';
 import { LlmProviderModule } from 'src/llm-provider/llm-provider.module';
+import { WebsocketsModule } from 'src/websockets/websockets.module';
 
 @Global()
 @Module({
@@ -18,6 +19,7 @@ import { LlmProviderModule } from 'src/llm-provider/llm-provider.module';
     LlmModule,
     LlmModelModule,
     LlmProviderModule,
+    WebsocketsModule,
   ],
   providers: [MessageProcessor],
   exports: [BullModule],

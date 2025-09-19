@@ -159,4 +159,14 @@ export class MessageService {
     }
     return MessageMapper.toDto(message);
   }
+
+  async updateMessageStatus(
+    messageId: number,
+    status: MessageStatus,
+  ): Promise<Message> {
+    return this.prisma.message.update({
+      where: { id: messageId },
+      data: { status },
+    });
+  }
 }

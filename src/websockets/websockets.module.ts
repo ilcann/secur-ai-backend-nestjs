@@ -6,6 +6,6 @@ import { AuthModule } from 'src/auth/auth.module';
   imports: [AuthModule],
   controllers: [],
   providers: [ChatGateway],
-  exports: [],
+  exports: [ChatGateway],
 })
 export class WebsocketsModule {}
