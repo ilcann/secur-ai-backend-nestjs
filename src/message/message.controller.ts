@@ -63,4 +63,15 @@ export class MessageController {
       message: 'Messages created successfully',
     });
   }
+
+  @Get('last')
+  async getLastMessage(
+    @Headers('x-chat-id') chatId: string,
+  ): Promise<ControllerResponse<{ message: MessageDto }>> {
+    const message = await this.messageService.getLastMessage(chatId);
+    return Promise.resolve({
+      data: { message: message },
+      message: 'Last message fetched successfully',
+    });
+  }
 }

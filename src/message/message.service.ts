@@ -148,4 +148,15 @@ export class MessageService {
       data: { content: fullResponse, status: 'COMPLETED' },
     });
   }
+
+  async getLastMessage(chatId: string): Promise<MessageDto> {
+    const message = await this.prisma.message.findFirst({
+      where: { chatId },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!message) {
+      throw new Error('Message not found');
+    }
+    return MessageMapper.toDto(message);
+  }
 }
