@@ -44,7 +44,13 @@ export class LlmService {
     const client = this.llmProviderService.getOpenAiClient();
     const response = await client.chat.completions.create({
       model: modelName,
-      messages: context as ChatCompletionMessageParam[],
+      messages: [
+        ...context,
+        {
+          role: 'system',
+          content: `Some parts of the user input are replaced with [masked label] placeholders to hide sensitive information. Treat these placeholders as opaque labels but try to reason based on context and intent.`,
+        },
+      ],
       stream: true,
     });
     for await (const part of response) {
