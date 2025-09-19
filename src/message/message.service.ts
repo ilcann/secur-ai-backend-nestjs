@@ -123,7 +123,7 @@ export class MessageService {
   ): Promise<Message> {
     return this.prisma.message.update({
       where: { id: messageId },
-      data: { maskedContent },
+      data: { maskedContent, status: 'MASKED' },
     });
   }
 
@@ -140,5 +140,12 @@ export class MessageService {
       role: msg.role === MessageRole.USER ? 'user' : 'assistant',
       content: msg.role === MessageRole.USER ? msg.maskedContent : msg.content,
     }));
+  }
+
+  async completeAiDraft(aiDraftId: number, fullResponse: string) {
+    return this.prisma.message.update({
+      where: { id: aiDraftId },
+      data: { content: fullResponse, status: 'COMPLETED' },
+    });
   }
 }

@@ -8,5 +8,6 @@ import { LlmModelModule } from 'src/llm-model/llm-model.module';
   imports: [LlmModelModule],
   controllers: [LlmProviderController],
   providers: [LlmProviderService, LlmProviderRepository],
+  exports: [LlmProviderService, LlmProviderRepository],
 })
 export class LlmProviderModule {}

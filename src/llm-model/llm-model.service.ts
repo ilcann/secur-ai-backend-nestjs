@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UpdateAiModelDto } from './dto/update-ai-model.dto';
 import { LlmModelRepository } from './llm-model.repository';
-import { Prisma } from '@prisma/client';
+import { AiModel, Prisma } from '@prisma/client';
 
 @Injectable()
 export class LlmModelService {
@@ -26,5 +26,11 @@ export class LlmModelService {
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
     return this.repo.update(id, updateData);
+  }
+
+  async getOne(where: Prisma.AiModelWhereUniqueInput): Promise<AiModel> {
+    const model = await this.repo.findOne(where);
+    if (!model) throw new Error('Model not found');
+    return model;
   }
 }

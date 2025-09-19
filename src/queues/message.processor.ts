@@ -7,6 +7,9 @@ import { MessageService } from 'src/message/message.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { LlmService } from 'src/llm/llm.service';
+import { LlmProviderService } from 'src/llm-provider/llm-provider.service';
+import { LlmModelService } from 'src/llm-model/llm-model.service';
 
 @Processor('messages')
 export class MessageProcessor extends WorkerHost {
@@ -15,6 +18,9 @@ export class MessageProcessor extends WorkerHost {
     private entityService: EntityService,
     private prismaService: PrismaService,
     private maskService: MaskService,
+    private llmService: LlmService,
+    private llmProviderService: LlmProviderService,
+    private llmModelService: LlmModelService,
     @InjectQueue('messages') private messageQueue: Queue,
   ) {
     super();
@@ -76,8 +82,40 @@ export class MessageProcessor extends WorkerHost {
       case 'llm.draft.created': {
         const { aiDraft } = job.data as { aiDraft: Message };
 
-        const context = await this.messageService.buildContext(aiDraft.chatId);
+        const context = (
+          await this.messageService.buildContext(aiDraft.chatId)
+        ).slice(0, -1);
 
+        const model = await this.llmModelService.getOne({
+          id: aiDraft.modelId,
+        });
+        const provider = await this.llmProviderService.getOne({
+          id: model.providerId,
+        });
+
+        const stream = this.llmService.streamResponse(
+          model.name,
+          provider.name,
+          context,
+        );
+        let fullResponse = '';
+        for await (const chunk of stream!) {
+          console.log('Stream chunk:', chunk);
+          fullResponse += chunk;
+        }
+
+        await this.messageQueue.add('llm.stream.completed', {
+          aiDraftId: aiDraft.id,
+          fullResponse,
+        });
+        break;
+      }
+      case 'llm.stream.completed': {
+        const { aiDraftId, fullResponse } = job.data as {
+          aiDraftId: number;
+          fullResponse: string;
+        };
+        await this.messageService.completeAiDraft(aiDraftId, fullResponse);
         break;
       }
     }
