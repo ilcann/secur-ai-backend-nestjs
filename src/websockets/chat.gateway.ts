@@ -9,11 +9,16 @@ import { Server, Socket } from 'socket.io';
 import * as cookie from 'cookie';
 import { AuthService } from 'src/auth/auth.service';
 
+const isDev = process.env.NODE_ENV === 'development';
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+
 @WebSocketGateway({
-  cors: {
-    origin: 'http://localhost:3000', // net origin belirt
-    credentials: true, // cookie'ye izin ver
-  },
+  cors: isDev
+    ? {
+        origin: frontendUrl,
+        credentials: true,
+      }
+    : undefined,
 })
 export class ChatGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect

@@ -6,8 +6,7 @@ import { CreateLabelDto } from './dto/create-label.dto';
 import { lastValueFrom } from 'rxjs';
 import { SyncResponseDto } from './dto/sync-response';
 
-const fastApiHost = process.env.FASTAPI_HOST || 'localhost';
-const fastApiPort = process.env.FASTAPI_PORT || '3003';
+const fastApiUrl = process.env.FASTAPI_URL || `http://localhost:3003`;
 
 @Injectable()
 export class LabelService {
@@ -39,9 +38,7 @@ export class LabelService {
   async syncLabels() {
     try {
       const response = await lastValueFrom(
-        this.httpService.post<SyncResponseDto>(
-          `http://${fastApiHost}:${fastApiPort}/fastapi/ner/labels/sync`,
-        ),
+        this.httpService.post<SyncResponseDto>(`${fastApiUrl}/ner/labels/sync`),
       );
       return response.data;
     } catch (error: any) {

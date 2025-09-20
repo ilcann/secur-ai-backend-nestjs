@@ -6,9 +6,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { EntityDto } from './dto/entity.dto';
 import { MessageService } from 'src/message/message.service';
 
-const fastApiHost = process.env.FASTAPI_HOST || 'localhost';
-const fastApiPort = process.env.FASTAPI_PORT || '3003';
-const fastApiUrl = `http://${fastApiHost}:${fastApiPort}`;
+const fastApiUrl = process.env.FASTAPI_URL || `http://localhost:3003`;
 
 @Injectable()
 export class EntityService {
@@ -23,7 +21,7 @@ export class EntityService {
 
     const response = await lastValueFrom(
       this.httpService.post<{ entities: NerEntityDto[] }>(
-        `${fastApiUrl}/fastapi/ner/extract`,
+        `${fastApiUrl}/ner/extract`,
         {
           text: message.content,
         },

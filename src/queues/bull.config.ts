@@ -1,11 +1,9 @@
 import { BullModule } from '@nestjs/bullmq';
 
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+
 const bullConfig = BullModule.forRoot({
-  // TODO: Redis connection options proces.env not working
-  connection: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: Number(process.env.REDIS_PORT) || 6379,
-  },
+  connection: { url: redisUrl },
   defaultJobOptions: { attempts: 1 },
 });
 
