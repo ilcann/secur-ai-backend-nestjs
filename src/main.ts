@@ -21,7 +21,7 @@ async function bootstrap() {
   const allowedOrigins = [frontend, fastapi];
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true,
