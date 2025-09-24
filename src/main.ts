@@ -34,7 +34,7 @@ async function bootstrap() {
     .setDescription('API description')
     .setVersion('1.0')
     .addBearerAuth()
-    .addServer(`http://${process.env.NESTJS_HOST}:${process.env.NESTJS_PORT}`)
+    .addServer(`/api`)
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
