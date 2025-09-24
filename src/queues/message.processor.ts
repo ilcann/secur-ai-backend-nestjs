@@ -135,15 +135,17 @@ export class MessageProcessor extends WorkerHost {
           aiDraftId: aiDraft.id,
           fullResponse,
         });
+        console.log('Full response:', fullResponse);
         break;
       }
       case 'llm.stream.completed': {
-        const { chatId, senderId } = job.data as {
+        const { chatId, senderId, aiDraftId, fullResponse } = job.data as {
           chatId: string;
           aiDraftId: number;
           fullResponse: string;
           senderId: number;
         };
+        this.messageService.completeAiDraft(aiDraftId, fullResponse);
         this.chatGateway.server
           .to(String(senderId))
           .emit('llm.stream.completed', {
