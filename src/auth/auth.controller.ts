@@ -34,7 +34,7 @@ export class AuthController {
 
     const cookieOptions: CookieOptions = {
       httpOnly: true,
-      secure: true,
+      secure: false,
       sameSite: 'none',
     };
     response.cookie('access_token', accessToken, cookieOptions);
