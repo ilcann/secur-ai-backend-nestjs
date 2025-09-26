@@ -126,7 +126,6 @@ export class MessageProcessor extends WorkerHost {
         );
         let fullResponse = '';
         for await (const chunk of stream!) {
-          console.log('Stream chunk:', chunk);
           fullResponse += chunk;
           this.chatGateway.server
             .to(String(senderId))
