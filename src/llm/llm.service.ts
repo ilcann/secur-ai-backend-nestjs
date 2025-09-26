@@ -79,8 +79,10 @@ export class LlmService {
     const systemMessage = {
       role: 'system',
       content:
-        'You are a title generator. Return a single concise title (max 60 characters) summarizing the chat content. ' +
-        'Do not include quotes, metadata, or extra explanation. Return plain text only.',
+        'You are a title generator. Return a single concise title (max 4 words) summarizing the chat content. ' +
+        'Do not include quotes, metadata, or extra explanation. Return plain text only.' +
+        'Always respond with a title, never say "no title" or similar.' +
+        'Only about the content of the chat, do not make up any information.',
     };
 
     const response = await client.chat.completions.create({
