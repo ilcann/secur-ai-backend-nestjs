@@ -41,23 +41,31 @@ export class LlmService {
   ): AsyncIterable<string> {
     console.log('Streaming response from OpenAI with model:', modelName);
     console.log('Context:', context);
+
     const client = this.llmProviderService.getOpenAiClient();
+
+    const systemMessage = {
+      role: 'system',
+      content: `You are an assistant that receives chat messages where sensitive details (such as names, emails, phone numbers, IDs, etc.)
+  are replaced with placeholders like [PERSON_NAME] or [EMAIL]. 
+
+  Treat these placeholders as opaque tokens — do not try to infer, expand, or reconstruct hidden information. 
+  Focus only on the conversation intent and context. 
+  Always generate a helpful, natural response as if the placeholders were just normal words in the text.`,
+    };
+
     const response = await client.chat.completions.create({
       model: modelName,
-      messages: [
-        ...context,
-        {
-          role: 'system',
-          content: `Some parts of the user input are replaced with [masked label] placeholders to hide sensitive information. Treat these placeholders as opaque labels but try to reason based on context and intent.`,
-        },
-      ],
+      messages: [systemMessage, ...context] as ChatCompletionMessageParam[],
       stream: true,
     });
+
     for await (const part of response) {
       const text = part.choices?.[0]?.delta?.content;
       if (text) yield text;
     }
   }
+
 
   private async generateResponseOpenAI(
     modelName: string,
