@@ -172,7 +172,7 @@ export class MessageProcessor extends WorkerHost {
         if (chat.title !== 'New Chat') break; // Title already exists
         const context = (await this.messageService.buildContext(chatId));
 
-        const title = await this.llmService.generateTitle(chatId, context);
+        const title = await this.llmService.generateTitle(context);
 
         if (title) {
           await this.prismaService.chat.update({

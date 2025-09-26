@@ -78,16 +78,19 @@ export class LlmService {
     return response.choices?.[0]?.message?.content ?? '';
   }
 
-  async generateTitle(chatId: string, context: ChatMessage[]): Promise<string | null> {
+  async generateTitle(context: ChatMessage[]): Promise<string | null> {
     const client = this.llmProviderService.getOpenAiClient();
 
     const systemMessage = {
       role: 'system',
       content:
-        'You are a title generator. Return a single concise title (max 4 words) summarizing the chat content. ' +
-        'Do not include quotes, metadata, or extra explanation. Return plain text only.' +
-        'Always respond with a title, never say "no title" or similar.' +
-        'Only about the content of the chat, do not make up any information.',
+        'You are a title generator. Output a single concise title (maximum 4 words) that directly summarizes the chat content. ' +
+        'Return plain text only, with no explanation, no punctuation at the start or end, and no surrounding quotes. ' +
+        'Do not add words like "title" or "summary". ' +
+        'Use the same language as the provided context. ' +
+        'Do not invent facts; base the title only on information present in the context. ' +
+        'If the subject is ambiguous, produce a short descriptive phrase that best represents the conversation. ' +
+        'Always output exactly one line containing only the title.'
     };
 
     const response = await client.chat.completions.create({
