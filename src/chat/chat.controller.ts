@@ -78,4 +78,8 @@ export class ChatController {
       },
     });
   }
+
+  async generateTitle() {
+    // Implement title generation logic here
+  }
 }

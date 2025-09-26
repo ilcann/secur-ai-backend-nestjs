@@ -72,4 +72,22 @@ export class LlmService {
     });
     return response.choices?.[0]?.message?.content ?? '';
   }
+
+  async generateTitle(chatId: string, context: ChatMessage[]): Promise<string | null> {
+    const client = this.llmProviderService.getOpenAiClient();
+
+    const systemMessage = {
+      role: 'system',
+      content:
+        'You are a title generator. Return a single concise title (max 60 characters) summarizing the chat content. ' +
+        'Do not include quotes, metadata, or extra explanation. Return plain text only.',
+    };
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [systemMessage, ...context] as ChatCompletionMessageParam[],
+    });
+  
+    return response.choices?.[0]?.message?.content ?? null;
+  }
 }

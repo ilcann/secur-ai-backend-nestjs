@@ -91,6 +91,10 @@ export class MessageProcessor extends WorkerHost {
           senderId,
           aiDraft,
         });
+        this.prismaService.chat.update({
+          where: { id: chatId },
+          data: { updatedAt: new Date() },
+        });
 
         this.chatGateway.server
           .to(String(senderId))
@@ -135,7 +139,6 @@ export class MessageProcessor extends WorkerHost {
           aiDraftId: aiDraft.id,
           fullResponse,
         });
-        console.log('Full response:', fullResponse);
         break;
       }
       case 'llm.stream.completed': {
@@ -151,7 +154,39 @@ export class MessageProcessor extends WorkerHost {
           .emit('llm.stream.completed', {
             chatId,
           });
+        this.prismaService.chat.update({
+          where: { id: chatId },
+          data: { updatedAt: new Date() },
+        })
+        await this.messageQueue.add('chat.ensure.title', {
+          chatId,
+          senderId,
+        });
         break;
+      }
+      case 'chat.ensure.title': {
+        const { chatId, senderId } = job.data as { chatId: string; senderId: number };
+        const chat = await this.prismaService.chat.findUnique({
+          where: { id: chatId },
+        });
+        if(!chat) break;
+        if (chat.title === 'New Chat') break; // Title already exists
+        const context = (await this.messageService.buildContext(chatId));
+
+        const title = await this.llmService.generateTitle(chatId, context);
+
+        if (title) {
+          await this.prismaService.chat.update({
+            where: { id: chatId },
+            data: { title },
+          });
+          this.chatGateway.server
+            .to(String(senderId))
+            .emit('chat.title.updated', {
+              chatId,
+              title,
+            });
+        }
       }
     }
   }
