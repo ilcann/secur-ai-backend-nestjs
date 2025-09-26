@@ -170,7 +170,7 @@ export class MessageProcessor extends WorkerHost {
           where: { id: chatId },
         });
         if(!chat) break;
-        if (chat.title === 'New Chat') break; // Title already exists
+        if (chat.title !== 'New Chat') break; // Title already exists
         const context = (await this.messageService.buildContext(chatId));
 
         const title = await this.llmService.generateTitle(chatId, context);
