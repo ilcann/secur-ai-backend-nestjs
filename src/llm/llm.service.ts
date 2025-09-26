@@ -39,9 +39,6 @@ export class LlmService {
     modelName: string,
     context: ChatMessage[],
   ): AsyncIterable<string> {
-    console.log('Streaming response from OpenAI with model:', modelName);
-    console.log('Context:', context);
-
     const client = this.llmProviderService.getOpenAiClient();
 
     const systemMessage = {
