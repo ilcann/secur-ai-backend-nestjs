@@ -6,7 +6,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { EntityDto } from './dto/entity.dto';
 import { MessageService } from 'src/message/message.service';
 
-const fastApiUrl = process.env.FASTAPI_URL || `http://localhost:3003`;
+const fastApiUrl = process.env.FASTAPI_URL || `http://localhost:8000`;
 
 @Injectable()
 export class EntityService {
