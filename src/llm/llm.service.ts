@@ -1,17 +1,13 @@
-import { Injectable, Res } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { AiProviderName } from '@prisma/client';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions/completions.js';
-import { LlmModelService } from 'src/llm-model/llm-model.service';
 import { LlmProviderService } from 'src/llm-provider/llm-provider.service';
 import { ChatMessage } from 'src/message/dto/chat-message.dto';
 import { ResponseUsage } from './dto/response-usage';
 
 @Injectable()
 export class LlmService {
-  constructor(
-    private llmProviderService: LlmProviderService,
-    private llmModelService: LlmModelService,
-  ) {}
+  constructor(private llmProviderService: LlmProviderService) {}
 
   streamResponse(
     modelName: string,
@@ -100,14 +96,14 @@ export class LlmService {
         'Use the same language as the provided context. ' +
         'Do not invent facts; base the title only on information present in the context. ' +
         'If the subject is ambiguous, produce a short descriptive phrase that best represents the conversation. ' +
-        'Always output exactly one line containing only the title.'
+        'Always output exactly one line containing only the title.',
     };
 
     const response = await client.chat.completions.create({
       model: 'gpt-4o',
       messages: [systemMessage, ...context] as ChatCompletionMessageParam[],
     });
-  
+
     return response.choices?.[0]?.message?.content ?? null;
   }
 }
