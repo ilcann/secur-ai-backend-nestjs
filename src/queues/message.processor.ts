@@ -12,6 +12,7 @@ import { LlmProviderService } from 'src/llm-provider/llm-provider.service';
 import { LlmModelService } from 'src/llm-model/llm-model.service';
 import { ChatGateway } from 'src/websockets/chat.gateway';
 import { EntityDto } from 'src/entity/dto/entity.dto';
+import { ResponseUsage } from 'src/llm/dto/response-usage';
 
 @Processor('messages')
 export class MessageProcessor extends WorkerHost {
@@ -124,13 +125,20 @@ export class MessageProcessor extends WorkerHost {
           provider.name,
           context,
         );
+
         let fullResponse = '';
+        let usage: ResponseUsage | null = null;
+
+        // Capture usage from the first chunk
         for await (const chunk of stream!) {
-          fullResponse += chunk;
+          fullResponse += chunk.text;
+          usage = chunk.usage;
           this.chatGateway.server
             .to(String(senderId))
             .emit('llm.stream.chunk', { chatId, chunk });
         }
+
+        console.log('Final usage:', usage);
 
         await this.messageQueue.add('llm.stream.completed', {
           chatId,
@@ -156,7 +164,7 @@ export class MessageProcessor extends WorkerHost {
         this.prismaService.chat.update({
           where: { id: chatId },
           data: { updatedAt: new Date() },
-        })
+        });
         await this.messageQueue.add('chat.ensure.title', {
           chatId,
           senderId,
@@ -164,13 +172,16 @@ export class MessageProcessor extends WorkerHost {
         break;
       }
       case 'chat.ensure.title': {
-        const { chatId, senderId } = job.data as { chatId: string; senderId: number };
+        const { chatId, senderId } = job.data as {
+          chatId: string;
+          senderId: number;
+        };
         const chat = await this.prismaService.chat.findUnique({
           where: { id: chatId },
         });
-        if(!chat) break;
+        if (!chat) break;
         if (chat.title !== 'New Chat') break; // Title already exists
-        const context = (await this.messageService.buildContext(chatId));
+        const context = await this.messageService.buildContext(chatId);
 
         const title = await this.llmService.generateTitle(context);
 

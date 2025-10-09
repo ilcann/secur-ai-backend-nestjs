@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Res } from '@nestjs/common';
 import { AiProviderName } from '@prisma/client';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions/completions.js';
 import { LlmModelService } from 'src/llm-model/llm-model.service';
 import { LlmProviderService } from 'src/llm-provider/llm-provider.service';
 import { ChatMessage } from 'src/message/dto/chat-message.dto';
+import { ResponseUsage } from './dto/response-usage';
 
 @Injectable()
 export class LlmService {
@@ -38,31 +39,40 @@ export class LlmService {
   private async *streamResponseOpenAI(
     modelName: string,
     context: ChatMessage[],
-  ): AsyncIterable<string> {
+  ) {
     const client = this.llmProviderService.getOpenAiClient();
 
     const systemMessage = {
       role: 'system',
       content: `You are an assistant that receives chat messages where sensitive details (such as names, emails, phone numbers, IDs, etc.)
-  are replaced with placeholders like [PERSON_NAME] or [EMAIL]. 
+        are replaced with placeholders like [PERSON_NAME] or [EMAIL]. 
 
-  Treat these placeholders as opaque tokens — do not try to infer, expand, or reconstruct hidden information. 
-  Focus only on the conversation intent and context. 
-  Always generate a helpful, natural response as if the placeholders were just normal words in the text.`,
+        Treat these placeholders as opaque tokens — do not try to infer, expand, or reconstruct hidden information. 
+        Focus only on the conversation intent and context. 
+        Always generate a helpful, natural response as if the placeholders were just normal words in the text.`,
     };
 
     const response = await client.chat.completions.create({
       model: modelName,
       messages: [systemMessage, ...context] as ChatCompletionMessageParam[],
       stream: true,
+      stream_options: { include_usage: true },
     });
+
+    let usage: ResponseUsage | null = null;
 
     for await (const part of response) {
       const text = part.choices?.[0]?.delta?.content;
-      if (text) yield text;
+      if (part.usage) {
+        usage = {
+          input_tokens: part.usage.prompt_tokens,
+          output_tokens: part.usage.completion_tokens,
+          total_tokens: part.usage.total_tokens,
+        };
+      }
+      if (text || usage) yield { text: text ?? null, usage: usage ?? null };
     }
   }
-
 
   private async generateResponseOpenAI(
     modelName: string,
