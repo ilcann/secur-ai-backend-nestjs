@@ -140,7 +140,7 @@ export class MessageProcessor extends WorkerHost {
             console.log('Emitting chunk:', { chatId, chunk }); // Debug log
             this.chatGateway.server
               .to(String(senderId))
-              .emit('llm.stream.chunk', { chatId, text });
+              .emit('llm.stream.chunk', { chatId, chunk: text });
           }
         }
 
