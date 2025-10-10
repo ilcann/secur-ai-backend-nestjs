@@ -136,6 +136,8 @@ export class MessageProcessor extends WorkerHost {
           if (chunk.text) {
             text = chunk.text;
             fullResponse += text;
+            console.log('Emitting text:', { chatId, text }); // Debug log
+            console.log('Emitting chunk:', { chatId, chunk }); // Debug log
             this.chatGateway.server
               .to(String(senderId))
               .emit('llm.stream.chunk', { chatId, text });
