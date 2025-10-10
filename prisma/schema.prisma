@@ -250,6 +250,11 @@ model AiModel {
   updatedAt DateTime @updatedAt
 }
 
+enum TokenType {
+  INPUT
+  OUTPUT
+}
+
 model AiUsage {
   id Int @id @default(autoincrement())
 
@@ -262,6 +267,7 @@ model AiUsage {
   modelId Int
   model   AiModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
+  tokenType TokenType
   tokens    Int // harcanan token sayısı
   createdAt DateTime @default(now())
 }

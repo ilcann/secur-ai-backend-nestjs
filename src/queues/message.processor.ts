@@ -92,7 +92,7 @@ export class MessageProcessor extends WorkerHost {
           senderId,
           aiDraft,
         });
-        this.prismaService.chat.update({
+        await this.prismaService.chat.update({
           where: { id: chatId },
           data: { updatedAt: new Date() },
         });
@@ -128,43 +128,74 @@ export class MessageProcessor extends WorkerHost {
 
         let fullResponse = '';
         let usage: ResponseUsage | null = null;
+        let text: string | null = null;
 
         // Capture usage from the first chunk
         for await (const chunk of stream!) {
-          fullResponse += chunk.text;
-          usage = chunk.usage;
-          this.chatGateway.server
-            .to(String(senderId))
-            .emit('llm.stream.chunk', { chatId, chunk });
+          if (chunk.usage && !usage) usage = chunk.usage;
+          if (chunk.text) {
+            text = chunk.text;
+            fullResponse += text;
+            this.chatGateway.server
+              .to(String(senderId))
+              .emit('llm.stream.chunk', { chatId, chunk });
+          }
         }
-
-        console.log('Final usage:', usage);
 
         await this.messageQueue.add('llm.stream.completed', {
           chatId,
           senderId,
           aiDraftId: aiDraft.id,
           fullResponse,
+          usage,
+          modelId: aiDraft.modelId,
         });
         break;
       }
       case 'llm.stream.completed': {
-        const { chatId, senderId, aiDraftId, fullResponse } = job.data as {
-          chatId: string;
-          aiDraftId: number;
-          fullResponse: string;
-          senderId: number;
-        };
-        this.messageService.completeAiDraft(aiDraftId, fullResponse);
+        const { chatId, senderId, aiDraftId, fullResponse, usage, modelId } =
+          job.data as {
+            chatId: string;
+            aiDraftId: number;
+            fullResponse: string;
+            senderId: number;
+            usage: ResponseUsage | null;
+            modelId: number;
+          };
+
+        // Finalize the AI draft message by updating its content
+        await this.messageService.completeAiDraft(aiDraftId, fullResponse);
         this.chatGateway.server
           .to(String(senderId))
           .emit('llm.stream.completed', {
             chatId,
           });
-        this.prismaService.chat.update({
+        await this.prismaService.chat.update({
           where: { id: chatId },
           data: { updatedAt: new Date() },
         });
+
+        // Record usage
+        if (usage && usage.input_tokens !== 0 && usage.output_tokens !== 0) {
+          await this.prismaService.aiUsage.create({
+            data: {
+              userId: senderId,
+              modelId: modelId,
+              tokenType: 'INPUT',
+              tokens: usage ? usage.input_tokens : 0,
+            },
+          });
+          await this.prismaService.aiUsage.create({
+            data: {
+              userId: senderId,
+              modelId: modelId,
+              tokenType: 'OUTPUT',
+              tokens: usage ? usage.output_tokens : 0,
+            },
+          });
+        }
+
+        // Ensure chat has a proper title
         await this.messageQueue.add('chat.ensure.title', {
           chatId,
           senderId,
@@ -176,15 +207,17 @@ export class MessageProcessor extends WorkerHost {
           chatId: string;
           senderId: number;
         };
+
+        // Check if chat title is still the default "New Chat"
         const chat = await this.prismaService.chat.findUnique({
           where: { id: chatId },
         });
         if (!chat) break;
         if (chat.title !== 'New Chat') break; // Title already exists
+
+        // Generate a title using the LLM service
         const context = await this.messageService.buildContext(chatId);
-
         const title = await this.llmService.generateTitle(context);
-
         if (title) {
           await this.prismaService.chat.update({
             where: { id: chatId },
@@ -199,11 +232,5 @@ export class MessageProcessor extends WorkerHost {
         }
       }
     }
-  }
-  onCompleted(job: Job) {
-    console.log('Job completed:', job);
-  }
-  onFailed(job: Job, err: Error) {
-    console.error('Job failed:', job, err);
   }
 }
