@@ -1,5 +1,5 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Message } from '@prisma/client';
+import { Message, TokenType } from '@prisma/client';
 import { Job } from 'bullmq';
 import { EntityService } from 'src/entity/entity.service';
 import { MaskService } from 'src/mask/mask.service';
@@ -181,7 +181,7 @@ export class MessageProcessor extends WorkerHost {
             data: {
               userId: senderId,
               modelId: modelId,
-              tokenType: 'INPUT',
+              tokenType: TokenType.INPUT,
               tokens: usage ? usage.input_tokens : 0,
             },
           });
@@ -189,7 +189,7 @@ export class MessageProcessor extends WorkerHost {
             data: {
               userId: senderId,
               modelId: modelId,
-              tokenType: 'OUTPUT',
+              tokenType: TokenType.OUTPUT,
               tokens: usage ? usage.output_tokens : 0,
             },
           });
