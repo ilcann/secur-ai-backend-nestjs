@@ -138,7 +138,7 @@ export class MessageProcessor extends WorkerHost {
             fullResponse += text;
             this.chatGateway.server
               .to(String(senderId))
-              .emit('llm.stream.chunk', { chatId, chunk });
+              .emit('llm.stream.chunk', { chatId, text });
           }
         }
 
