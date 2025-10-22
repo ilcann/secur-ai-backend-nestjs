@@ -55,18 +55,21 @@ export class LlmService {
       stream_options: { include_usage: true },
     });
 
-    let usage: ResponseUsage | null = null;
+    let responseUsage: ResponseUsage | null = null;
 
-    for await (const part of response) {
-      const text = part.choices?.[0]?.delta?.content;
-      if (part.usage) {
-        usage = {
-          input_tokens: part.usage.prompt_tokens,
-          output_tokens: part.usage.completion_tokens,
-          total_tokens: part.usage.total_tokens,
+    for await (const chunk of response) {
+      const content = chunk.choices?.[0]?.delta?.content;
+      if (chunk.usage) {
+        responseUsage = {
+          input_tokens: chunk.usage.prompt_tokens,
+          output_tokens: chunk.usage.completion_tokens,
         };
       }
-      if (text || usage) yield { text: text ?? null, usage: usage ?? null };
+      if (content || responseUsage)
+        yield {
+          content: content ?? null,
+          responseUsage: responseUsage ?? null,
+        };
     }
   }
 

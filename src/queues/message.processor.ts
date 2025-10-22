@@ -1,5 +1,6 @@
+import { UsageTrackingService } from 'src/llm-usage/usage-tracking.service';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Message, TokenType } from '@prisma/client';
+import { Message } from '@prisma/client';
 import { Job } from 'bullmq';
 import { EntityService } from 'src/entity/entity.service';
 import { MaskService } from 'src/mask/mask.service';
@@ -25,6 +26,7 @@ export class MessageProcessor extends WorkerHost {
     private llmProviderService: LlmProviderService,
     private llmModelService: LlmModelService,
     private chatGateway: ChatGateway,
+    private usageTrackingService: UsageTrackingService,
     @InjectQueue('messages') private messageQueue: Queue,
   ) {
     super();
@@ -82,9 +84,14 @@ export class MessageProcessor extends WorkerHost {
           maskedContent: string;
           modelId: number;
         };
+
         const aiDraft = await this.messageService.createAIDraftMessage({
           chatId,
           modelId,
+        });
+        await this.prismaService.chat.update({
+          where: { id: chatId },
+          data: { updatedAt: new Date() },
         });
 
         await this.messageQueue.add('llm.draft.created', {
@@ -92,11 +99,6 @@ export class MessageProcessor extends WorkerHost {
           senderId,
           aiDraft,
         });
-        await this.prismaService.chat.update({
-          where: { id: chatId },
-          data: { updatedAt: new Date() },
-        });
-
         this.chatGateway.server
           .to(String(senderId))
           .emit('llm.draft.created', { message: aiDraft });
@@ -109,35 +111,31 @@ export class MessageProcessor extends WorkerHost {
           aiDraft: Message;
         };
 
-        const context = (
-          await this.messageService.buildContext(aiDraft.chatId)
-        ).slice(0, -1);
-
+        // Start llm stream
+        const context = await this.messageService.buildContext(aiDraft.chatId);
         const model = await this.llmModelService.getOne({
           id: aiDraft.modelId,
         });
         const provider = await this.llmProviderService.getOne({
           id: model.providerId,
         });
-
         const stream = this.llmService.streamResponse(
           model.name,
           provider.name,
           context,
         );
 
+        // Capture stream chunks
         let fullResponse = '';
-        let usage: ResponseUsage | null = null;
+        let responseUsage: ResponseUsage | null = null;
         let text: string | null = null;
 
-        // Capture usage from the first chunk
         for await (const chunk of stream!) {
-          if (chunk.usage && !usage) usage = chunk.usage;
-          if (chunk.text) {
-            text = chunk.text;
+          if (chunk.content && !responseUsage)
+            responseUsage = chunk.responseUsage;
+          if (chunk.content) {
+            text = chunk.content;
             fullResponse += text;
-            console.log('Emitting text:', { chatId, text }); // Debug log
-            console.log('Emitting chunk:', { chatId, chunk }); // Debug log
             this.chatGateway.server
               .to(String(senderId))
               .emit('llm.stream.chunk', { chatId, chunk: text });
@@ -149,21 +147,27 @@ export class MessageProcessor extends WorkerHost {
           senderId,
           aiDraftId: aiDraft.id,
           fullResponse,
-          usage,
+          responseUsage,
           modelId: aiDraft.modelId,
         });
         break;
       }
       case 'llm.stream.completed': {
-        const { chatId, senderId, aiDraftId, fullResponse, usage, modelId } =
-          job.data as {
-            chatId: string;
-            aiDraftId: number;
-            fullResponse: string;
-            senderId: number;
-            usage: ResponseUsage | null;
-            modelId: number;
-          };
+        const {
+          chatId,
+          senderId,
+          aiDraftId,
+          fullResponse,
+          responseUsage,
+          modelId,
+        } = job.data as {
+          chatId: string;
+          aiDraftId: number;
+          fullResponse: string;
+          senderId: number;
+          responseUsage: ResponseUsage | null;
+          modelId: number;
+        };
 
         // Finalize the AI draft message by updating its content
         await this.messageService.completeAiDraft(aiDraftId, fullResponse);
@@ -178,22 +182,11 @@ export class MessageProcessor extends WorkerHost {
         });
 
         // Record usage
-        if (usage && usage.input_tokens !== 0 && usage.output_tokens !== 0) {
-          await this.prismaService.aiUsage.create({
-            data: {
-              userId: senderId,
-              modelId: modelId,
-              tokenType: TokenType.INPUT,
-              tokens: usage ? usage.input_tokens : 0,
-            },
-          });
-          await this.prismaService.aiUsage.create({
-            data: {
-              userId: senderId,
-              modelId: modelId,
-              tokenType: TokenType.OUTPUT,
-              tokens: usage ? usage.output_tokens : 0,
-            },
+        if (responseUsage) {
+          await this.usageTrackingService.recordUsage({
+            userId: senderId,
+            modelId: modelId,
+            ResponseUsage: responseUsage,
           });
         }
 

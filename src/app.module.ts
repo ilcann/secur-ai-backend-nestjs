@@ -16,6 +16,7 @@ import { MaskModule } from './mask/mask.module';
 import { LlmModule } from './llm/llm.module';
 import { LlmProviderModule } from './llm-provider/llm-provider.module';
 import { LlmModelModule } from './llm-model/llm-model.module';
+import { LlmUsageModule } from './llm-usage/llm-usage.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { LlmModelModule } from './llm-model/llm-model.module';
     LlmModule,
     LlmProviderModule,
     LlmModelModule,
+    LlmUsageModule,
   ],
   controllers: [AppController],
   providers: [AppService],
