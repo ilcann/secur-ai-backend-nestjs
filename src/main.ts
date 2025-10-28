@@ -16,6 +16,7 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const appConfiguration = configService.get<AppConfig>('app')!;
+  
 
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
@@ -52,6 +53,7 @@ async function bootstrap() {
     SwaggerModule.setup(appConfiguration.swaggerPath, app, document);
   }
 
+  app.setGlobalPrefix(appConfiguration.globalPrefix);
   await app.listen(appConfiguration.port, '0.0.0.0');
 }
 void bootstrap();

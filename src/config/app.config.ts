@@ -16,9 +16,9 @@ export interface AppConfig {
 // 2. Yapılandırma objesini 'app' anahtarıyla kaydetme
 export const appConfig = registerAs('app', (): AppConfig => {
   // Environment Değişkenlerinden değerleri al
-  const port = parseInt(process.env.BACKEND_PORT ?? '4000', 10);
+  const port = parseInt(process.env.BACKEND_PORT ?? '3001', 10);
   const env = process.env.NODE_ENV || 'development';
-  const globalPrefix = process.env.API_GLOBAL_PREFIX || 'api';
+  const globalPrefix = process.env.API_GLOBAL_PREFIX || 'api/chat';
 
   // Swagger ayarları (Environment değişkenlerinden veya sabit değerlerden)
   const swaggerEnabled =
@@ -27,7 +27,7 @@ export const appConfig = registerAs('app', (): AppConfig => {
   const swaggerDescription =
     process.env.SWAGGER_DESCRIPTION || 'Filter Engine API Documentation';
   const swaggerVersion = process.env.SWAGGER_VERSION || '1.0';
-  const swaggerPath = process.env.SWAGGER_PATH || 'api/docs';
+  const swaggerPath = process.env.SWAGGER_PATH || 'api/chat/docs';
   const swaggerBearerName = 'accessToken';
 
   // Zorunlu alan kontrolü (Gerekirse)
