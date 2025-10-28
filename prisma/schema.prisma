@@ -23,6 +23,24 @@ enum UserStatus {
   SUSPENDED
 }
 
+model RefreshToken {
+  id           String    @id @default(uuid())
+  userId      Int
+  user        User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  jti   String    @unique // public identifier part of the refresh token
+  hashedSecret    String    // hashed refresh token
+
+  expiresAt    DateTime  // expiration timestamp
+  createdAt    DateTime  @default(now())
+
+  revoked         Boolean   @default(false)
+  ipAddress       String?
+  userAgent       String?
+
+  @@map("refresh_tokens")
+}
+
 model User {
   id        Int    @id @default(autoincrement())
   email     String @unique
@@ -48,6 +66,8 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
 
   @@index([departmentId])
 }
