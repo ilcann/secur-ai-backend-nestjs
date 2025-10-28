@@ -1,26 +1,44 @@
-import { ConflictException, Injectable } from '@nestjs/common';
-import { comparePassword } from 'src/common/utils/hash.util';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UserDto } from 'src/user/dto/user.dto';
 import { UserMapper } from 'src/user/mappers/user.mapper';
 import { UserService } from 'src/user/user.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
+import { User, UserStatus } from '@prisma/client';
+import { TokenService } from './token.service';
+import cryptoUtils from './utils/crypto.util';
+
+
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private userService: UserService,
+    private tokenService: TokenService,
   ) {}
-  async validateUser(email: string, password: string): Promise<UserDto | null> {
+  async validateUser(email: string, password: string): Promise<{ user, accessToken, refreshToken }> {
     const user = await this.userService.findByEmail(email);
-    if (!user) return null;
 
-    const isPasswordValid = await comparePassword(password, user.password);
-    if (!isPasswordValid) return null;
+    // 2. Kullanıcı/Etkinlik Kontrolü
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
 
-    return UserMapper.toDto(user);
+    // 3. Şifre Doğrulaması
+    const isPasswordValid = await cryptoUtils.compareWithHash(
+      password,
+      user.password,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // 4. Başarılı Giriş Loglama
+    const { accessToken, refreshToken } =
+      await this.tokenService.createSession(user);
+
+    return { user, accessToken, refreshToken };
   }
   issueAccessToken(user: UserDto): string {
     const payload: JwtPayload = {
