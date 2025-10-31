@@ -29,27 +29,21 @@ export class ChatGateway
   server: Server;
 
   afterInit() {
-    console.log('ChatGateway initialized');
+    console.log('[ChatGateway] ChatGateway initialized');
   }
 
   async handleConnection(client: Socket) {
-    const cookies = client.handshake.headers.cookie;
-    if (!cookies) {
-      console.log('No cookies found');
-      return client.disconnect();
-    }
-    const parsed = cookie.parse(cookies);
-    const token = parsed['access_token'];
+    const auth = client.handshake.auth as { accessToken?: string };
+
+    const token = auth.accessToken;
     if (!token) {
-      console.log('No token found');
+      console.log('[ChatGateway] No access token provided');
       return client.disconnect();
     }
-    // Here you would normally validate the token and possibly fetch user info
-    // For this example, we'll just log the connection
 
     const user = await this.authService.verifyToken(token);
     if (!user) {
-      console.log('Invalid token');
+      console.log('[ChatGateway] Invalid access token');
       return client.disconnect();
     }
 
@@ -58,14 +52,14 @@ export class ChatGateway
     await client.join(user.id.toString());
 
     const sockets = this.server.sockets.sockets;
-    console.log(`Client connected: ${client.id}`);
-    console.log(`Total connected clients: ${sockets.size}`);
+    console.log(`[ChatGateway] Client connected: ${client.id}`);
+    console.log(`[ChatGateway] Total connected clients: ${sockets.size}`);
   }
 
   handleDisconnect(client: Socket) {
     const sockets = this.server.sockets.sockets;
-    console.log(`Client disconnected: ${client.id}`);
-    console.log(`Total connected clients: ${sockets.size}`);
+    console.log(`[ChatGateway] Client disconnected: ${client.id}`);
+    console.log(`[ChatGateway] Total connected clients: ${sockets.size}`);
   }
 
   sendUpdate(chatId: string, payload: any) {

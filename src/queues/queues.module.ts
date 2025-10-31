@@ -9,10 +9,20 @@ import { LlmModelModule } from 'src/llm-model/llm-model.module';
 import { LlmProviderModule } from 'src/llm-provider/llm-provider.module';
 import { WebsocketsModule } from 'src/websockets/websockets.module';
 import { LlmUsageModule } from 'src/llm-usage/llm-usage.module';
+import { ConfigService } from '@nestjs/config';
 
 @Global()
 @Module({
   imports: [
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        connection: { url: configService.get<string>('bull.connection.url') },
+        defaultJobOptions: {
+          attempts: configService.get<number>('bull.defaultJobOptions.attempts') || 1,
+        },
+      }),
+    }),
     BullModule.registerQueue({ name: 'messages' }),
     EntityModule,
     MessageModule,

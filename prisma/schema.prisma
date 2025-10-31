@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DB_URL")
 }
 
 //////////////////////////
@@ -21,6 +21,24 @@ enum UserStatus {
   ACTIVE
   PENDING
   SUSPENDED
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid())
+  userId      Int
+  user        User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  jti   String    @unique // public identifier part of the refresh token
+  hashedSecret    String    // hashed refresh token
+
+  expiresAt    DateTime  // expiration timestamp
+  createdAt    DateTime  @default(now())
+
+  revoked         Boolean   @default(false)
+  ipAddress       String?
+  userAgent       String?
+
+  @@map("refresh_tokens")
 }
 
 model User {
@@ -48,6 +66,8 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
 
   @@index([departmentId])
 }
