@@ -17,6 +17,7 @@ import { LlmModule } from './llm/llm.module';
 import { LlmProviderModule } from './llm-provider/llm-provider.module';
 import { LlmModelModule } from './llm-model/llm-model.module';
 import { LlmUsageModule } from './llm-usage/llm-usage.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { AppConfigModule } from './config/config.module';
 
 @Module({
@@ -44,6 +45,7 @@ import { AppConfigModule } from './config/config.module';
     LlmProviderModule,
     LlmModelModule,
     LlmUsageModule,
+    AnalyticsModule,
     AppConfigModule,
   ],
   controllers: [AppController],

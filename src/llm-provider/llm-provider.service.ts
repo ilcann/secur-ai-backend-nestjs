@@ -117,7 +117,28 @@ export class LlmProviderService {
   }
 
   async addModelsToProvider(name: AiProviderName, providerId: number) {
-    const models = await this.fetchProviderModels({ name: name });
+    // Fetch the provider first to use it for model fetching
+    const provider = await this.repo.findUnique({ id: providerId });
+    if (!provider || !provider.apiKey) {
+      throw new BadRequestException('Provider not found or API key missing');
+    }
+
+    // Initialize client if not already done
+    this.initializeProviderClient(provider, provider.apiKey);
+
+    // Fetch models directly without checking isActive
+    let models: string[] = [];
+    switch (provider.name) {
+      case 'OPENAI':
+        models = await this.fetchOpenAiModels();
+        break;
+      case 'GEMINI':
+        models = await this.fetchGenAiModels();
+        break;
+      default:
+        models = [];
+    }
+
     await Promise.allSettled(
       models.map((modelName) =>
         this.llmModelService.createModel({
@@ -133,9 +154,45 @@ export class LlmProviderService {
   ): Promise<AiProvider> {
     await this.ensureProviderDoesNotExist(data.name);
     await this.validateApiKey(data.name, data.apiKey);
-    const provider = await this.repo.create(data);
+
+    // Create provider with isActive: true by default
+    const provider = await this.repo.create({
+      ...data,
+      isActive: true,
+    });
+
     await this.addModelsToProvider(data.name, provider.id);
     this.initializeProviderClient(provider, data.apiKey);
     return provider;
+  }
+
+  async listProviders(): Promise<AiProvider[]> {
+    return this.repo.findMany();
+  }
+
+  async updateProvider(
+    id: number,
+    data: { apiKey?: string },
+  ): Promise<AiProvider> {
+    const provider = await this.repo.findUnique({ id });
+    if (!provider) {
+      throw new BadRequestException('Provider not found');
+    }
+
+    if (data.apiKey) {
+      await this.validateApiKey(provider.name, data.apiKey);
+      this.initializeProviderClient(provider, data.apiKey);
+    }
+
+    return this.repo.update({ id }, data);
+  }
+
+  async deleteProvider(id: number): Promise<void> {
+    const provider = await this.repo.findUnique({ id });
+    if (!provider) {
+      throw new BadRequestException('Provider not found');
+    }
+
+    await this.repo.delete({ id });
   }
 }
