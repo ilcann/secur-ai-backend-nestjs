@@ -8,6 +8,7 @@ import { LlmModule } from 'src/llm/llm.module';
 import { LlmModelModule } from 'src/llm-model/llm-model.module';
 import { LlmProviderModule } from 'src/llm-provider/llm-provider.module';
 import { WebsocketsModule } from 'src/websockets/websockets.module';
+import { LlmUsageModule } from 'src/llm-usage/llm-usage.module';
 
 @Global()
 @Module({
@@ -20,6 +21,7 @@ import { WebsocketsModule } from 'src/websockets/websockets.module';
     LlmModelModule,
     LlmProviderModule,
     WebsocketsModule,
+    LlmUsageModule,
   ],
   providers: [MessageProcessor],
   exports: [BullModule],
