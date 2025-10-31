@@ -1,7 +1,6 @@
 import { Body, Controller, Post, Res } from '@nestjs/common';
 import { LoginRequestDto } from './dto/login-request.dto';
 import { AuthService } from './auth.service';
-import { UnauthorizedException } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { RegisterResponseDto } from './dto/register-response.dto';
@@ -10,6 +9,8 @@ import { UserDto } from 'src/user/dto/user.dto';
 import { UserMapper } from 'src/user/mappers/user.mapper';
 import type { CookieOptions, Response as ResponseType } from 'express';
 import { ControllerResponse } from 'src/common/dto/controller-response.dto';
+import { setRefreshTokenCookie } from './utils/auth-cookie.util';
+import { plainToInstance } from 'class-transformer';
 
 @Controller('auth')
 export class AuthController {
@@ -19,29 +20,19 @@ export class AuthController {
     summary: 'User login',
     description: 'Authenticate user with email and password, returns JWT token',
   })
-  @ApiBody({
-    type: LoginRequestDto,
-    description: 'User login credentials',
-  })
   async login(
     @Body() dto: LoginRequestDto,
     @Res({ passthrough: true }) response: ResponseType,
   ): Promise<ControllerResponse<LoginResponseDto>> {
-    const user = await this.authService.validateUser(dto.email, dto.password);
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+    const { user, accessToken, refreshToken } = await this.authService.validateUser(dto.email, dto.password);
 
-    const accessToken = this.authService.issueAccessToken(user);
-
-    const cookieOptions: CookieOptions = {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-    };
-    response.cookie('access_token', accessToken, cookieOptions);
+    setRefreshTokenCookie(response, refreshToken);
+    
+    const userDto: UserDto = UserMapper.toDto(user);
 
     return Promise.resolve({
       message: 'Login successful',
-      data: { user },
+      data: { user: userDto, accessToken },
     });
   }
 
@@ -69,10 +60,6 @@ export class AuthController {
     summary: 'User registration',
     description: 'Register a new user account',
   })
-  @ApiBody({
-    type: RegisterRequestDto,
-    description: 'User registration data',
-  })
   async register(
     @Body() dto: RegisterRequestDto,
   ): Promise<ControllerResponse<RegisterResponseDto>> {
@@ -82,10 +69,11 @@ export class AuthController {
       dto.firstName,
       dto.lastName,
     );
-    const userDto: UserDto = UserMapper.toDto(user);
+
+    const userDto = plainToInstance(UserDto, user, { excludeExtraneousValues: true });
 
     return Promise.resolve({
-      message: 'User registered successfully',
+      message: 'User registered successfully, Wait for admin approval',
       data: { user: userDto },
     });
   }

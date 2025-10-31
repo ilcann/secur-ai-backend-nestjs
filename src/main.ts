@@ -6,11 +6,17 @@ import * as dotenv from 'dotenv';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { ConfigService } from '@nestjs/config';
+import { AppConfig } from './config/app.config';
 
 dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const configService = app.get(ConfigService);
+  const appConfiguration = configService.get<AppConfig>('app')!;
+  
 
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
@@ -29,16 +35,25 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  const config = new DocumentBuilder()
-    .setTitle('Secur Ai API Documentation')
-    .setDescription('API description')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addServer(`/api`)
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  if (appConfiguration.swaggerEnabled) {
+    const options = new DocumentBuilder()
+      .setTitle(appConfiguration.swaggerTitle)
+      .setDescription(appConfiguration.swaggerDescription)
+      .setVersion(appConfiguration.swaggerVersion)
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+        appConfiguration.swaggerBearerName,
+      )
+      .build();
+    const document = SwaggerModule.createDocument(app, options);
+    SwaggerModule.setup(appConfiguration.swaggerPath, app, document);
+  }
 
-  await app.listen(process.env.NESTJS_PORT ?? 3002);
+  app.setGlobalPrefix(appConfiguration.globalPrefix);
+  await app.listen(appConfiguration.port, '0.0.0.0');
 }
 void bootstrap();
